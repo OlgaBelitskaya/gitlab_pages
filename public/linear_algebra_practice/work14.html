@@ -1,0 +1,287 @@
+<!DOCTYPE HTML>
+<html>
+  <head>
+    <meta charset='utf-8'>
+    <meta name='viewport' content='width=device-width'>
+    <title>📑 Linear Algebra Work 14</title>
+    <script src='https://sagecell.sagemath.org/static/embedded_sagecell.js'></script>
+    <script>$(function(){
+      sagecell.makeSagecell({inputLocation:'div.linked_sage',linked:true,evalButtonText:'Run Linked Sage Cells'});
+      sagecell.makeSagecell({inputLocation:'div.linked_python',linked:true,evalButtonText:'Run Linked Python Cells'});
+      sagecell.makeSagecell({inputLocation:'div.linked_r',linked:true,evalButtonText:'Run Linked R Cells'});
+      sagecell.makeSagecell({inputLocation:'div.sage',evalButtonText:'Run'});
+      sagecell.makeSagecell({inputLocation:'div.sage_html',evalButtonText:'Run HTML'});});
+    </script>
+  </head>
+  <style>
+    @import 'https://fonts.googleapis.com/css?family=Orbitron';
+    h1,h2 {color:#3636ff; font-family:Orbitron; text-shadow:5px 5px 5px #aaa;}
+    p,a {color:darkblue; font-size:110%; text-shadow:5px 5px 5px #aaa;}
+    .sagecell .CodeMirror-scroll {min-height:3em; max-height:70em;}
+    body {margin:5px 5px 5px 25px;}
+  </style>  
+  <body>
+    <h1>&#x1F4D1; &nbsp; Линейная алгебра. Практическая работа №14</h1>
+<a href='https://olgabelitskaya.gitlab.io/index.html'>&#x1F300; &nbsp; Homepage &nbsp; &nbsp;</a>
+<a href='https://olgabelitskaya.github.io/README.html'>&#x1F300; &nbsp; GitHub Pages &nbsp; &nbsp;</a>
+<a href='https://olgabelitskaya.gitlab.io/linear_algebra_practice/work13.html'>&#x1F300; &nbsp; Previous &nbsp; &nbsp;</a>
+<a href='https://www.instagram.com/olga.belitskaya/'>&#x1F300; &nbsp; Instagram Posts &nbsp; &nbsp;</a>
+<a href='https://www.pinterest.ru/olga_belitskaya/code-style/'>&#x1F300; &nbsp; Pinterest Posts</a>
+    <h1>Тензоры</h1>
+    <h2>1. Основные понятия</h2>
+Тензор  типа $(p, q)$ - полилинейная функция:
+<p>- от $p$ векторов линейного простанства $V$ на полем $\mathbb{K}$</p> 
+<p>- и $q$ линейных функций двойственного к нему пространства $V'$,</p>
+<p>- принимающая значения в $\mathbb{K}$,</p>
+<p>- линейная по каждому аргументу при фиксированных остальных аргументах.</p>
+Примеры:
+<p>1) скаляры — тензоры типа (0, 0) $\mathbb{K}$;</p>
+<p>2) векторы — тензоры типа (0, 1) $\mathbb{K} \to V$;</p>
+<p>3) линейные функции — тензоры типа (1, 0) $V \to \mathbb{K}$;</p>
+<p>4) билинейные функции — тензоры типа (2, 0) $V \times V \to \mathbb{K}$;</p>
+<p>5) линейные операторы — тензоры типа (1, 1) $V \to V$.</p>
+Тензорное исчисление применяется и в случае дифференциальных операторов (тензорный анализ). 
+    <p>Активируйте этот код перед использованием любых ячеек Linked Sage Cells</p>
+<div class='linked_sage'><script type='text/x-sage'>
+M=FiniteRankFreeModule(ZZ,3,name='M')
+e=M.basis('e') 
+d=[[0,0],[1,0],[0,1],[1,1],[2,0],
+   [0,2],[2,1],[1,2],[3,0],[0,3]]
+T=[M.tensor_module(d[i][0],d[i][1]) 
+   for i in [0..9]]; T
+</script></div><br/>      
+<div class='linked_sage'><script type='text/x-sage'>
+A1=M.linear_form(name='A1'); A1[:]=(-1,2,-3)
+A2=M.linear_form(name='A2'); A2[:]=(3,-2,1)
+B1=M([4,-5,6],name='B1'); B2=M([-3,1,2],name='B2')
+L=[[l.display(e),l.tensor_type()] 
+   for l in [A1,A2,B1,B2]]
+for el in L: pretty_print(el)
+</script></div>
+    <p>Активируйте этот код перед использованием любых ячеек Linked Python Cells</p>
+<div class='linked_python'><script type='text/x-sage'>
+import numpy,sympy
+sympy.init_printing(use_unicode=True)
+NA=numpy.array(range(1,9)).reshape(2,2,2)
+NB=numpy.array(['♔','♕','♖','♗'],dtype=object).reshape(2,2)
+G=numpy.array(['A','B','C','D'],dtype=object).reshape(2,2) 
+H=numpy.array([1,2,3,4]).reshape(2,2)
+F=numpy.array([5,6,7,8]).reshape(2,2)
+</script></div><br/>
+<div class='linked_python'><script type='text/x-sage'>
+x,y,z,t,u,v,w=sympy.symbols('x,y,z,t,u,v,w')
+SA=sympy.Array([[1,2],[3,4]])
+SB=sympy.Array([[[x,y],[z,t]],
+                [[z/x**2,t/y**2],[x**2+y**2,z**2+t**2]]])
+SA,SA.shape,SA.rank(),SB,SB.shape,SB.rank()
+</script></div>
+    <p>Активируйте этот код перед использованием любых ячеек Linked R Cells</p>
+<div class='linked_r'><script type='text/x-sage'>
+%%r
+A<-array(1:24,c(2,3,4)); B<-array(25:48,c(4,3,2))
+C<-array(1:8,c(2,4)); D<-array(9:16,c(2,4))
+list(A,B,C,D)
+</script></div><br/>
+<div class='linked_r'><script type='text/x-sage'>
+%%r
+G<-t(array(LETTERS[1:8],c(2,2))) 
+H<-t(array(c(1:4),c(2,2))) 
+F<-t(array(c(5,6,7,8),c(2,2)))
+list(G,H,F)
+</script></div>
+    <h2>2. Умножение тензоров второго ранга</h2>
+Формальное произведение двух векторов (диада) 
+<br/><br/>
+(или произведение их координат и ортогональных нормированных векторов базиса):
+<p>$ab = (a_m e_m)(b_n e_n) = a_m b_n e_m e_n$</p>
+<p>$e_m e_n$ - линейно независимые комбинации, элементы тензорного базиса.</p>
+Запишем тензоры в виде: $AB = a_m b_m, GH = g_n h_n$
+<br/><br/>
+Единичный тензор второго ранга $E$ и вектор $x$: 
+<p>$E \cdot x = x \cdot E = x$</p>
+<p>$E = e_1 e_1 + e_2 e_2 + e_3 e_3$</p>
+1. Скалярное умножение тензора на вектор
+<p>$AB \cdot c = a_m (b_m \cdot c), c \cdot AB = (c \cdot a_m) b_m$</p>
+<p>! тензор 2-го ранга на вектор = вектор</p>
+2. Векторное умножение тензора на вектор
+<p>$AB \times c = a_m (b_m \times c), c \times AB = (c \times a_m) b_m$</p>
+<p>! тензор 2-ого ранга на вектор = тензор 2-ого ранга</p>
+3. Тензорное умножение тензора на вектор
+<p>$AB c = a_m b_m c, c AB = c a_m b_m$</p>
+<p>! тензор 2-ого ранга на вектор = тензор 3-ого ранга</p>
+4. Скалярное умножение тензора на тензор
+<p>$AB \cdot  GH = (a_m b_m) \cdot (g_n h_n) = (b_m \cdot g_n) a_m h_n$</p>
+<p>! тензор 2-ого ранга на тензор 2-ого ранга = тензор 2-ого ранга</p>
+5. Векторное умножение тензоров
+<p>$AB \times GH = (a_m b_m) \times (g_n h_n) = a_m (b_m \times g_n) h_n$</p>
+<p>! тензор 2-ого ранга на тензор 2-ого ранга = тензор 3-ого ранга</p> 
+6. Тензорное умножение тензоров
+<p>$AB \ GH = a_m b_m g_n h_n$</p>
+<p>! тензор 2-ого ранга на тензор 2-ого ранга = тензор 4-ого ранга</p>
+7. Двойное скалярное умножение тензоров
+<p>$AB \cdot \cdot GH = (a_m b_m) \cdot \cdot (g_n h_n) = (b_m \cdot g_n) (a_m \cdot h_n)$</p>
+<p>! тензор 2-ого ранга на тензор 2-ого ранга = скаляр</p>
+8. Двойное векторное умножение тензоров
+<p>$AB \times \times GH = (a_m b_m) \times \times (g_n h_n) = (b_m \times g_n) (a_m \times h_n)$</p>
+<p>! тензор 2-ого ранга на тензор 2-ого ранга = тензор 2-ого ранга</p>
+9. Скалярно-векторное умножение тензоров
+<p>$AB \cdot \times GH = (a_m b_m) \cdot \times (g_n h_n) = (b_m \cdot g_n) (a_m \times h_n)$</p>
+<p>! тензор 2-ого ранга на тензор 2-ого ранга =  вектор</p>
+10. Векторно-скалярное умножение тензоров
+<p>$AB \times \cdot GH = (a_m b_m) \times \cdot (g_n h_n) = (b_m \times g_n) (a_m \cdot h_n)$</p>
+<p>! тензор 2-ого ранга на тензор 2-ого ранга =  вектор</p>
+Свойства умножение тензоров второго ранга
+<p>1) $c \cdot A = A^T \cdot c$;</p>
+<p>2) $(c \times A)^T = −A^T \times c$;</p>
+<p>3) $c \cdot A \cdot d = d \cdot A^T \cdot = A \cdot \cdot (dc) = (dc) \cdot \cdot A$;</p>
+<p>4) $(c \times d) \times A = (dc − cd) \cdot A$;</p>
+<p>5) $(A \cdot B)^T = B^T \cdot A^T$;</p>
+и т.д.<br/>
+<div class='linked_sage'><script type='text/x-sage'>
+A1A2=A1*A2; MA1A2=matrix(A1A2.comp(e))
+v=matrix(SR,3,[3,2,1])
+vA1A2=MA1A2*v # MA1A2: v → vA1A2
+A1B1=A1*B1; MA1B1=matrix(A1B1.comp(e))
+vA1B1=MA1B1*v # MA1B1: v → vA1B1
+B1B2=B1*B2; MB1B2=matrix(B1B2.comp(e))
+vB1B2=MB1B2*v # MB1B2: v → vB1B2
+L=[[A1A2.display(e),A1A2.tensor_type()],
+   MA1A2,[v,vA1A2],
+   [A1B1.display(e),A1B1.tensor_type()],
+   MA1B1,[v,vA1B1],
+   [B1B2.display(e),B1B2.tensor_type()],
+   MB1B2,[v,vB1B2]]
+for el in L: pretty_print(el)
+</script></div><br/>
+<div class='linked_python'><script type='text/x-sage'>
+d=[0,1,2,(0,1),(1,1),(2,1)]
+NAB=[numpy.tensordot(NA,NB,d[i]) for i in [0..5]]
+for t in NAB: print(t.shape)
+[sympy.pprint(el) for el in NAB[2]]
+for t in [NAB[1],NAB[3],NAB[4],NAB[5]]:
+    print(15*'=_='); 
+    [sympy.pprint(el[i,j]) 
+     for j in range(2) for i in range(2) for el in t]
+</script></div><br/>  
+<div class='linked_python'><script type='text/x-sage'>
+d1=[1,2,(0,1),(1,1),(2,1)]
+SAB=[sympy.tensorproduct(SA,SB,d1[i]) 
+     for i in range(5)]
+for el in SAB: 
+    display(el); print(el.shape)
+d2=[(0,1,2),(0,1),(0,2),(1,2)]
+SBC=[sympy.tensorcontraction(SB,d2[i]) 
+     for i in range(4)]
+SBC
+</script></div><br/>
+<div class='linked_r'><script type='text/x-sage'>
+%%r
+print(c(dim(A%*%B),A%*%B))
+print(dim(A%o%B)); A%o%B[1]
+</script></div><br/>
+<div class='linked_r'><script type='text/x-sage'>
+%%r
+list(dim(C*D),C*D)
+</script></div><br/>
+<div class='linked_r'><script type='text/x-sage'>
+%%r
+list(dim(t(C)*t(D)),t(C)*t(D))
+</script></div>
+    <h2>3. Примеры применения тензорного исчисления</h2>
+<p>${x’} = \frac{2 \ x}{x^{2} + y^{2}} \ ; \ {y’} = \frac{2 \ y}{x^{2} + y^{2}} \\
+\begin{array}{llcl} \Delta_1: \ Md \ \longrightarrow \ \mathbb{R}^3 \\ 
+    \mbox{on}\ U : \ \left(x, y\right) \longmapsto \left(X, Y, Z\right) = 
+    \left(\frac{x}{x^{2} + y^{2} + 1}, \frac{y}{x^{2} + y^{2} + 1}, 
+    \frac{x^{2} + y^{2} - 1}{x^{2} + y^{2} + 1}\right) ; \ 
+    \mbox{on}\ V : \ \left({x’}, {y’}\right) \longmapsto \left(X, Y, Z\right) = 
+    \left(\frac{3 \, {x’}}{{x’}^{2} + {y’}^{2} + 1}, 
+    \frac{3 \, {y’}}{{x’}^{2} + {y’}^{2} + 1}, -
+    \frac{{x’}^{2} + {y’}^{2} - 1}{{x’}^{2} + {y’}^{2} + 1}\right) \end{array} \\
+\begin{array}{llcl} \Delta_2: \ Md \ \longrightarrow \ \mathbb{R}^3 \\ 
+    \mbox{on}\ U : \ \left(x, y\right) \longmapsto \left(X, Y, Z\right) = 
+    \left(\frac{6 \, x}{x^{2} + y^{2} + 1}, \frac{6 \, y}{x^{2} + y^{2} + 1}, 
+    \frac{x^{2} + y^{2} - 1}{x^{2} + y^{2} + 1}\right) ; \ 
+    \mbox{on}\ V : \ \left({x’}, {y’}\right) \longmapsto \left(X, Y, Z\right) = 
+    \left(\frac{12 \, {x’}}{{x’}^{2} + {y’}^{2} + 1}, 
+    \frac{12 \, {y’}}{{x’}^{2} + {y’}^{2} + 1}, -
+    \frac{{x’}^{2} + {y’}^{2} - 1}{{x’}^{2} + {y’}^{2} + 1}\right) \end{array}$</p>
+<div class='linked_sage'><script type='text/x-sage'>
+Md=Manifold(2,'Md')
+U=Md.open_subset('U'); V=Md.open_subset('V')
+XU.<x,y>=U.chart(); XV.<xp,yp>=V.chart('xp:x’ yp:y’')
+Md.declare_union(U,V)
+XU_to_XV=XU.transition_map(XV,\
+(2*x/(x^2+y^2),2*y/(x^2+y^2)),intersection_name='W',\
+restrictions1=x^2+y^2!=0,restrictions2=xp^2+yp^2!=0)
+R3=Manifold(3,'R^3',r'\mathbb{R}^3')
+XR3.<X,Y,Z>=R3.chart()
+Delta1=Md.diff_map(R3,\
+{(XU,XR3):[1*x/(1+x^2+y^2),1*y/(1+x^2+y^2),
+           (x^2+y^2-1)/(1+x^2+y^2)],\
+(XV,XR3):[3*xp/(1+xp^2+yp^2),3*yp/(1+xp^2+yp^2),
+          (1-xp^2-yp^2)/(1+xp^2+yp^2)]},\
+name='Delta1',latex_name=r'\Delta_1')
+Delta2=Md.diff_map(R3,\
+{(XU,XR3):[6*x/(1+x^2+y^2),6*y/(1+x^2+y^2),
+           (x^2+y^2-1)/(1+x^2+y^2)],\
+(XV,XR3):[12*xp/(1+xp^2+yp^2),12*yp/(1+xp^2+yp^2),
+          (1-xp^2-yp^2)/(1+xp^2+yp^2)]},\
+name='Delta2',latex_name=r'\Delta_2')
+p=XU.plot(chart=XR3,mapping=Delta1,number_values=30,
+          color='#3636ff',label_axes=False)+\
+XV.plot(chart=XR3,mapping=Delta1,number_values=30,
+        color='#ff36ff',label_axes=False)+\
+XU.plot(chart=XR3,mapping=Delta2,number_values=45,
+        color='#ff3636',label_axes=False)+\
+XV.plot(chart=XR3,mapping=Delta2,number_values=6,
+        color='#36ff36',thickness=2,label_axes=False)
+p.show(frame=False)
+</script></div><br/>
+<div class='linked_python'><script type='text/x-sage'>
+x,y,z,t,u,v,w=sympy.symbols('x,y,z,t,u,v,w')
+ST=sympy.Array([[[x*sympy.cos(u)*z^2-y,x^3*u*v^6-sympy.sin(w*t)],
+                 [t*sympy.tan(u*w),sympy.exp(y)*z*u-w]],
+                [[y^3*v^5-t,x*sympy.log(w)*z^4],
+                 [x-sympy.exp(z)*w^7,y*t^8*u*v]]])
+display(ST)
+for el in [x,y,z,t,u,v,w]: 
+    display(ST.diff(el))
+</script></div><br/>  
+<div class='linked_python'><script type='text/x-sage'>
+GH=numpy.tensordot(H,G,0)
+sympy.pprint(GH); GH.shape
+</script></div><br/> 
+<div class='linked_r'><script type='text/x-sage'>
+%%r
+GH<-outer(G,H,FUN=paste); list(GH,dim(GH))
+</script></div><br/>
+<div class='linked_python'><script type='text/x-sage'>
+GHF=numpy.kron(GH,F); sympy.pprint(GHF)
+GHF.shape
+</script></div><br/>
+<div class='linked_r'><script type='text/x-sage'>
+%%r
+GHF<-kronecker(GH,F,FUN=paste)
+list(GHF,dim(GHF))
+</script></div>    
+    <h2>4. Задание</h2>
+Инициировать скаляры, векторы, тензоры 2-ого ранга и<br/> 
+выполнить не менее 3 видов умножения тензоров,<br/>
+используя SageMath, Numpy, SymPy или R.<br/>
+<div class='linked_sage'><script type='text/x-sage'>
+
+</script></div><br/>
+<div class='linked_python'><script type='text/x-sage'>
+import numpy,sympy,pylab
+
+</script></div><br/>  
+<div class='linked_r'><script type='text/x-sage'>
+%%r
+
+</script></div> 
+    <h2>5. Отдельная ячейка для дополнительных экспериментов</h2>   
+<div class='sage'><script type='text/x-sage'>
+
+</script></div>
+  </body>
+</html>

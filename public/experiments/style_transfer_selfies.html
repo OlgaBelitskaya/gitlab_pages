@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<meta charset='utf-8'>
+<head>
+  <script src='https://sagecell.sagemath.org/static/embedded_sagecell.js'></script>
+  <script>$(function(){
+    sagecell.makeSagecell(
+      {inputLocation:'div.linked',linked:true,evalButtonText:'run linked cells'}); });
+  </script>
+</head>
+<style>
+  @import 'https://fonts.googleapis.com/css?family=Akronim';
+  .ph1 {font-family:Akronim; font-size:160%; text-shadow:3px 3px 3px #aaa;}
+  a {color:slategray; font-size:110%; text-shadow:3px 3px 3px #aaa;}
+  h2 {color:slategray; font-family:Akronim; font-size:120%; text-shadow:4px 4px 4px #aaa;}
+  .sagecell .CodeMirror-scroll {min-height:3em; max-height:70em; text-shadow:3px 3px 3px #aaa;}
+  body {max-width:95%; margin:5px 5px 5px 15px; padding: 0 1em;}
+</style>
+<body>
+  <div class='navbar'>
+    <a href='https://olgabelitskaya.gitlab.io/index.html'>🌐 &nbsp; Homepage &nbsp; &nbsp;</a>
+    <a href='https://olgabelitskaya.gitlab.io/experiments/index.html'>🌐 &nbsp; Experiment List &nbsp; &nbsp;</a>
+    <a href='https://olgabelitskaya.github.io/README.html'>🌐 &nbsp; GitHub Pages &nbsp; &nbsp;</a> 
+  </div>
+  <h1 class='ph1' id='ch1'>Style Transfer for Paintings, Patterns, Symbols, & Selfies with TFHub Models.</h1>
+  <h2>✒️ &nbsp; Modules & Settings</h2>
+<div class='linked'><script type='text/x-sage'>
+!python3 -m pip install tensorflow_hub \
+--user --quiet --no-warn-script-location --no-warn-conflicts
+path='/home/sc_work/.sage/local/lib/python3.8/site-packages'
+import os,sys,warnings,urllib
+sys.path.append(path); warnings.filterwarnings('ignore')
+import tensorflow_hub as hub,tensorflow as tf
+from IPython.display import display,HTML
+from IPython.core.magic import register_line_magic
+os.environ['TFHUB_MODEL_LOAD_FORMAT']='COMPRESSED'
+</script></div><br/>
+  <h2>✒️ &nbsp; Data Loading</h2>
+<div class='linked'><script type='text/x-sage'>
+file_path='https://raw.githubusercontent.com/OlgaBelitskaya/data/main/'
+folder_path=['humans/','paintings/','decors/','symbols/']
+original,style,original_img,style_img='','',[],[]
+original_dict={'selfie 1':folder_path[0]+'00_01_001.png',
+               'selfie 2':folder_path[0]+'00_01_002.png'}
+style_sources=['Ivan Aivazovsky','Traditional Pattern','Symbol']
+style_paintings=['The Bay of Naples','Gzel','Letter']
+style_dict={style_sources[0]+' || '+style_paintings[0]:folder_path[1]+'01_00_001.png',
+            style_sources[1]+' || '+style_paintings[1]:folder_path[2]+'00_00_011.png',
+            style_sources[2]+' || '+style_paintings[2]:folder_path[3]+'00_01_00_00_001.png'}
+def load_img(img_path,rotate=True,max_dim=int(512)):
+    img=tf.io.read_file(img_path)
+    img=tf.image.decode_image(img,channels=3)
+    img=tf.image.convert_image_dtype(img,tf.float32)
+    shape=tf.cast(tf.shape(img)[:-int(1)],tf.float32)
+    new_shape=tf.cast(shape*max_dim/max(shape),tf.int32)
+    img=tf.image.resize(img,new_shape)
+    if rotate: img=tf.image.rot90(img)
+    return img[tf.newaxis,:]
+</script></div><br/>
+<div class='linked'><script type='text/x-sage'>
+@interact(layout=dict(top=[['original_image','style_source','style_painting'],
+                           ['max_image_size','rotate_original_image','rotate_style_image']]))
+def _get_files(original_image=selector(list(original_dict.keys()),default='selfie 1'),
+               style_source=selector(style_sources,default='Ivan Aivazovsky'),
+               style_painting=selector(style_paintings,default='The Bay of Naples'),
+               max_image_size=selector([256,320,..,1024],default=512),
+               rotate_original_image=selector([True,False],default=True),
+               rotate_style_image=selector([True,False],default=False)):
+    global original,style,original_img,style_img
+    global file_path,folder_path,original_dict,style_dict,style_sources,style_paintings
+    original=original_dict[original_image]
+    style_exp=style_source+' || '+style_painting
+    if style_exp not in list(style_dict.keys()): 
+        pretty_print('please, choose another style_source & style_painting')
+    else:
+        style=style_dict[style_exp]
+        for file_name in [original,style]:
+            input_file=urllib.request.urlopen(file_path+file_name)
+            output_file=open(file_name[file_name.find('/')+int(1):],'wb'); 
+            output_file.write(input_file.read())
+            output_file.close(); input_file.close()
+        original_img=load_img(original[original.find('/')+int(1):],
+                              rotate=rotate_original_image,max_dim=int(max_image_size))
+        style_img=load_img(style[style.find('/')+int(1):],
+                           rotate=rotate_style_image,max_dim=int(max_image_size))
+        sh1='shape of the original image: %s'%str(original_img.shape)
+        matrix_plot(original_img[int(0)],title=sh1,figsize=5).show()
+        sh2='shape of the style image: %s'%str(style_img.shape)
+        matrix_plot(style_img[int(0)],title=sh2,figsize=5).show()
+</script></div><br/>
+  <h2>✒️ &nbsp; TFHub Usage</h2>
+<div class='linked'><script type='text/x-sage'>
+model_path='https://tfhub.dev/google/'
+model_dict={'magenta':model_path+'magenta/arbitrary-image-stylization-v1-256/2'}
+@interact(layout=dict(top=[['tfhub_model'],
+                           ['max_image_size','rotate_original_image','rotate_style_image']]))
+def _style_transfer(tfhub_model=selector(list(model_dict.keys()),default='magenta'),
+                    max_image_size=selector([256,320,..,1024],default=512),
+                    rotate_original_image=selector([True,False],default=True),
+                    rotate_style_image=selector([True,False],default=True)):
+    global original,style,original_img,style_img,stylized_img,model_dict
+    original_img=load_img(original[original.find('/')+int(1):],
+                          rotate=rotate_original_image,max_dim=int(max_image_size))
+    style_img=load_img(style[style.find('/')+int(1):],
+                       rotate=rotate_style_image,max_dim=int(max_image_size))
+    hub_model=hub.load(model_dict[tfhub_model])
+    stylized_img=hub_model(
+        tf.constant(original_img),tf.constant(style_img))[int(0)]
+    matrix_plot(stylized_img[int(0)],figsize=7).show()
+</script></div><br/>
+  <h2>✒️ &nbsp; Animation</h2>
+<div class='linked'><script type='text/x-sage'>
+steps,imgs=0,[]
+@interact(layout=dict(top=[['max_image_size','iter_steps']]))
+def _interpolate_resize(max_image_size=selector([256,320,..,512],default=256),
+                        iter_steps=selector([10,20,..,60],default=30)):
+    global imgs,original_img,stylized_img
+    max_dim=int(max_image_size); steps=int(iter_steps)
+    for img in [original_img,stylized_img]:
+        shape=tf.cast(tf.shape(img)[int(1):int(-1)],tf.float32)
+        new_shape=tf.cast(shape*max_dim/max(shape),tf.int32)
+        img=tf.image.resize(img,new_shape)
+    original_img_norm=tf.norm(original_img) 
+    stylized_img_norm=tf.norm(stylized_img)
+    vectors=[]
+    stylized_img_normalized=stylized_img*(original_img_norm/stylized_img_norm)
+    for step in range(steps):
+        interpolated=original_img+\
+        (stylized_img_normalized-original_img)*step/(steps-int(1))
+        interpolated_norm=tf.norm(interpolated)
+        interpolated_normalized=interpolated*(original_img_norm/interpolated_norm)
+        vectors.append(interpolated_normalized)
+    imgs=tf.squeeze(tf.stack(vectors)).numpy()
+    animate([matrix_plot(imgs[i],figsize=5,frame=False) for i in range(steps)]).show()
+</script></div><br/>
+  <h2>✒️ &nbsp; Your Experiments</h2>
+<div class='linked'><script type='text/x-sage'>
+
+</script></div><br/>
+<script type='module'>
+var tc=setInterval(function() {
+  var doc1=document.getElementById('ch1');
+  var now=Math.floor((new Date().getTime()%(1000*60))/1000);
+  var col='rgb('+(10+Math.abs(245-8*now))+','+(255-Math.abs(245-8*now))+',0)';
+  doc1.style.color=col}, 1000);
+</script>
+</body>

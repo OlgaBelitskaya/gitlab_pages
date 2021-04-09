@@ -1,0 +1,196 @@
+<!DOCTYPE HTML>
+<html>
+  <head>
+    <meta charset='utf-8'>
+    <meta name='viewport' content='width=device-width'>
+    <title>🏙 DL PP5_1 SMC</title>
+    <script src='https://sagecell.sagemath.org/static/embedded_sagecell.js'></script>
+    <script>$(function(){
+      sagecell.makeSagecell(
+        {inputLocation:'div.linked',linked:true,evalButtonText:'run linked cells'});});
+    </script>
+  </head>
+  <style>
+    @import 'https://fonts.googleapis.com/css?family=Akronim|Lobster';
+    h1,h2,th {color:#348ABD; font-family:Akronim; font-size:120%; text-shadow:4px 4px 4px #aaa;}
+    p,a {color:slategray; font-family:Lobster; font-size:120%; text-shadow:4px 4px 4px #aaa;}
+    .sagecell .CodeMirror-scroll {min-height:3em; max-height:70em;}
+    body {margin:5px 5px 5px 15px;}
+  </style>  
+  <body>
+    <h1>📑 &nbsp; Deep Learning. Practice Project 5_1: Exercises with Horse Breeds` Images</h1>
+<a href='https://olgabelitskaya.gitlab.io/index.html'>&#x1F300; &nbsp; Homepage &nbsp; &nbsp;</a>
+<a href='https://olgabelitskaya.gitlab.io/deep_learning_projects/index.html'>&#x1F300; &nbsp; Project List &nbsp; &nbsp;</a>
+<a href='https://olgabelitskaya.github.io/README.html'>&#x1F300; &nbsp; GitHub Pages &nbsp; &nbsp;</a>
+<a href='https://olgabelitskaya.gitlab.io/deep_learning_projects/DL_PP4_0_SMC.html'>
+&#x1F300; &nbsp; Previous &nbsp; &nbsp;</a>
+<a href='https://olgabelitskaya.gitlab.io/deep_learning_projects/DL_PP5_0_SMC.html'>
+&#x1F300; &nbsp; Main &nbsp; &nbsp;</a>
+<a href='https://olgabelitskaya.gitlab.io/deep_learning_projects/DL_PP6_0_SMC.html'>
+&#x1F300; &nbsp; Next &nbsp; &nbsp;</a><br/>
+<a href='https://www.instagram.com/olga.belitskaya/'>&#x1F300; &nbsp; Instagram Posts &nbsp; &nbsp;</a>
+<a href='https://www.pinterest.ru/olga_belitskaya/code-style/'>&#x1F300; &nbsp; Pinterest Posts</a><br/>
+In this project, we'll classify images from the dataset
+<a href='https://www.kaggle.com/olgabelitskaya/horse-breeds'>Horse Breeds</a>.<br/>
+The content is about 600 images (160x160x3) with 7 horse breeds
+stored in the file of <i>Hierarchical Data Format (HDF5)</i>.<br/>
+In the original dataset, photo files have the extension PNG and they are labeled by file prefixes.<br/>
+    <h2>✒️ &nbsp; Code Modules & Settings</h2>      
+<div class='linked'><script type='text/x-sage'>
+!python3 -m pip install tensorflow_hub --user --quiet --no-warn-script-location
+path='/home/sc_work/.sage/local/lib/python3.8/site-packages'
+import sys,warnings; sys.path.append(path); warnings.filterwarnings('ignore')
+from IPython.display import display,HTML
+import tensorflow as tf,tensorflow_hub as hub,numpy as np
+import os,h5py,urllib,pandas as pd,pylab as pl
+os.environ['TFHUB_MODEL_LOAD_FORMAT']='COMPRESSED'
+from tensorflow.keras.applications import vgg19,VGG19
+mvgg19=VGG19(include_top=True,weights='imagenet')
+file_path='https://raw.githubusercontent.com/OlgaBelitskaya/data_kitchen/main/'
+file_name='HorseBreeds160.h5'
+img_path='https://raw.githubusercontent.com/OlgaBelitskaya/data/main/horses/'
+img_files=['00_05_001.png','00_06_001.png']
+img_size=int(64); data_img_size=int(128); steps=int(30); max_img_size=int(224)
+from IPython.display import HTML
+HTML('<style>.sagecell_input {text-shadow:4px 4px 4px #aaa;}</style>')
+</script></div><br/>      
+    <h2>✒️ &nbsp; Data Loading</h2> 
+<div class='linked'><script type='text/x-sage'>
+def get_data(file_path,file_name,img_size=data_img_size):
+    input_file=urllib.request.urlopen(file_path+file_name)
+    output_file=open(file_name,'wb')
+    output_file.write(input_file.read())
+    output_file.close(); input_file.close()
+    with h5py.File(file_name,'r') as f:
+        keys=list(f.keys())
+        print('file keys: '+', '.join(keys))
+        images=np.array(f[keys[0]])
+        images=tf.image.resize(images,[img_size,img_size]).numpy()
+        labels=np.array(f[keys[1]])
+        names=[el.decode('utf-8') for el in f[keys[2]]]
+        f.close()
+    return images,labels,names
+images,labels,names=get_data(file_path,file_name)
+</script></div><br/>
+    <h2>✒️ &nbsp; Data Processing</h2>  
+<div class='linked'><script type='text/x-sage'>
+N=labels.shape[0]; n=int(.1*N); num_classes=len(names) 
+shuffle_ids=np.arange(N)
+np.random.RandomState(12).shuffle(shuffle_ids)
+images=images[shuffle_ids]; labels=labels[shuffle_ids]
+x_test,x_valid,x_train=images[:n],images[n:2*n],images[2*n:]
+y_test,y_valid,y_train=labels[:n],labels[n:2*n],labels[2*n:]
+df=pd.DataFrame(
+    [[x_train.shape,x_valid.shape,x_test.shape],
+     [x_train.dtype,x_valid.dtype,x_test.dtype],
+     [y_train.shape,y_valid.shape,y_test.shape],
+     [y_train.dtype,y_valid.dtype,y_test.dtype]],
+    columns=['train','valid','test'],
+    index=['image shape','image type','label shape','label type'])
+def display_imgs(images,labels,names):
+    fig=pl.figure(figsize=(8,3)); randi=randint(0,200)
+    for i in range(randi,randi+8):
+        ax=fig.add_subplot(2,4,i-randi+1,xticks=[],yticks=[])
+        ax.set_title(names[labels[i]],color='slategray',
+                     fontdict={'fontsize':'large'})
+        ax.imshow((images[i]))
+    pl.tight_layout(); pl.show()
+display_imgs(images,labels,names); display(df)
+</script></div><br/>
+    <h2>✒️ &nbsp; Super Resolution</h2>
+<div class='linked'><script type='text/x-sage'>
+def esrgantf2_superresolution(img,img_size=int(50)):
+    model=hub.load('https://tfhub.dev/captain-pool/esrgan-tf2/1')
+    func=model.signatures[tf.saved_model.DEFAULT_SERVING_SIGNATURE_DEF_KEY]
+    func.inputs[int(0)].set_shape([int(1),img_size,img_size,int(3)])
+    converter=tf.lite.TFLiteConverter.from_concrete_functions([func])
+    converter.optimizations=[tf.lite.Optimize.DEFAULT]
+    tflite_model=converter.convert()
+    with tf.io.gfile.GFile('ESRGAN.tflite','wb') as f:
+        f.write(tflite_model)
+    esrgan_model_path='./ESRGAN.tflite'
+    if img.mean()<float(1): img=img*float(255)
+    lr=tf.image.resize(img,[img_size,img_size])
+    lr=tf.expand_dims(lr.numpy()[:,:,:int(3)],axis=int(0))
+    lr=tf.cast(lr,tf.float32)
+    interpreter=tf.lite.Interpreter(model_path=esrgan_model_path)
+    interpreter.allocate_tensors()
+    input_details=interpreter.get_input_details()
+    output_details=interpreter.get_output_details()
+    interpreter.set_tensor(input_details[int(0)]['index'],lr)
+    interpreter.invoke()
+    output_data=interpreter.get_tensor(output_details[int(0)]['index'])
+    sr=tf.squeeze(output_data,axis=int(0))
+    sr=tf.clip_by_value(sr,int(0),int(255))
+    sr=tf.round(sr); sr=tf.cast(sr,tf.uint8)
+    lr=tf.cast(tf.squeeze(lr,axis=int(0)),tf.uint8)
+    return lr,sr
+img=images[int(0)]
+lr,sr=esrgantf2_superresolution(img,img_size)
+</script></div><br/>
+<div class='linked'><script type='text/x-sage'>
+def low2superbicubic_imgs(img,lr,sr,img_size=img_size):
+    pl.figure(figsize=(10,3))
+    pl.subplot(1,4,1); pl.title('HR'); pl.imshow(img)
+    pl.subplot(1,4,2); pl.title('LR'); pl.imshow(lr.numpy())
+    pl.subplot(1,4,3); pl.title(f'ESRGAN x4'); pl.imshow(sr.numpy())
+    bicubic=tf.image.resize(
+        lr,[img_size*int(4),img_size*int(4)],tf.image.ResizeMethod.BICUBIC)
+    bicubic_contrast=tf.image.adjust_contrast(bicubic,float(.8))
+    bicubic_contrast=tf.cast(bicubic_contrast,tf.uint8)
+    pl.subplot(1,4,4); pl.title('Bicubic & Contrast')
+    pl.imshow(bicubic_contrast.numpy())
+    pl.tight_layout(); pl.show()
+low2superbicubic_imgs(img,lr,sr)
+</script></div><br/>
+    <h2>✒️ &nbsp; Color Interpolation</h2>
+<div class='linked'><script type='text/x-sage'>
+def hyper_interpolate(v1,v2,steps):
+    v1norm=tf.norm(v1); v2norm=tf.norm(v2)
+    vectors=[]; v2normalized=v2*(v1norm/v2norm)
+    for step in range(steps):
+        interpolated=v1+(v2normalized-v1)*step/(steps-int(1))
+        interpolated_norm=tf.norm(interpolated)
+        interpolated_normalized=interpolated*(v1norm/interpolated_norm)
+        vectors.append(interpolated_normalized)
+    return tf.stack(vectors).numpy()
+imgs=tf.concat([hyper_interpolate(x_test[0],x_valid[0],steps),
+                hyper_interpolate(x_valid[0],x_test[0],steps)],axis=int(0))
+animate([matrix_plot(imgs[i],figsize=(3,3),frame=False) for i in range(2*steps)])
+</script></div><br/> 
+    <h2>✒️ &nbsp; Object Detection</h2>
+<div class='linked'><script type='text/x-sage'>
+def load_img(img_file,max_img_size=max_img_size):
+    img=tf.io.read_file(img_file)
+    img=tf.image.decode_image(img,channels=int(3))
+    img=tf.image.convert_image_dtype(img,tf.float32)
+    shape=tf.cast(tf.shape(img)[:-int(1)],tf.float32)
+    scale=max_img_size/max(shape)
+    new_shape=tf.cast(shape*scale,tf.int32)
+    img=tf.image.resize(img,new_shape)
+    return img[tf.newaxis,:]
+def tensor2img(tensor):
+    if np.ndim(tensor)>int(3):
+        assert tensor.shape[int(0)]==int(1)
+        tensor=tensor[int(0)]
+    return matrix_plot(tensor,figsize=(3,3),frame=False)
+for f in img_files:
+    input_file=urllib.request.urlopen(img_path+f)
+    output_file=open(f,'wb')
+    output_file.write(input_file.read())
+    output_file.close(); input_file.close()
+</script></div><br/>
+<div class='linked'><script type='text/x-sage'>
+for i in range(len(img_files)):
+    content_img=load_img(img_files[i])
+    x=vgg19.preprocess_input(content_img*(int(255)))
+    prediction_probabilities=mvgg19(x)
+    predict_top5=vgg19.decode_predictions(
+        prediction_probabilities.numpy())[int(0)]
+    pretty_print('example #%d'%(i+1))
+    display(table(
+        [[class_name,prob] for (number,class_name,prob) in predict_top5]))
+    tensor2img(content_img).show()
+</script></div><br/>
+  </body>
+</html>

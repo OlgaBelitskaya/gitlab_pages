@@ -1,0 +1,116 @@
+<!DOCTYPE HTML>
+<html>
+  <head>
+    <meta charset='utf-8'>
+    <meta name='viewport' content='width=device-width'>
+    <title>📑 TensorFlow Workout 01</title>
+    <script src='https://sagecell.sagemath.org/static/embedded_sagecell.js'></script>
+    <script>$(function() {sagecell.makeSagecell({inputLocation:'div.linked',linked:true,evalButtonText:'run'});});
+    </script>
+  </head>
+  <style>
+    @import 'https://fonts.googleapis.com/css?family=Akronim';
+    h1,h2,h3,h4 {color:darkorange; font-family:Akronim; text-shadow:4px 4px 4px #aaa; padding-left:20px;}
+    p,a {color:slategray; font-size:110%; text-shadow:4px 4px 4px #aaa; padding-left:20px;}
+    body {margin:5px 5px 5px 20px; background:whitesmoke; border:double slategray;}
+    .sagecell .CodeMirror-scroll {min-height:3em; max-height:90em;}
+  </style>
+  <body>
+    <div class='navbar'>
+    &nbsp; &nbsp; &nbsp; &nbsp;
+    <a href='https://olgabelitskaya.gitlab.io/index.html'>🌐 &nbsp; Homepage &nbsp; &nbsp;</a>
+    &nbsp; &nbsp; &nbsp; &nbsp;
+    <a href='https://olgabelitskaya.gitlab.io/workout/index.html'>🌐 &nbsp; Workout List</a>
+    &nbsp; &nbsp; &nbsp; &nbsp;
+    <a href='https://olgabelitskaya.github.io/README.html'>🌐 &nbsp; GitHub Pages &nbsp; &nbsp;</a>
+    &nbsp; &nbsp; &nbsp; &nbsp; 
+    <a href='https://www.instagram.com/olga.belitskaya/'>🌐 &nbsp; Instagram Posts &nbsp; &nbsp;</a> 
+    &nbsp; &nbsp; &nbsp; &nbsp;    
+    <a href='https://www.pinterest.ru/olga_belitskaya/code-style/'>🌐 &nbsp; Pinterest Posts</a>
+    </div><br/>
+    <h1>📑 TensorFlow Workout 01</h1>
+    <h2>Code Modules</h2>
+<div class='linked'><script type='text/x-sage'>
+!python3 -m pip install tensorflow_hub --user --quiet --no-warn-script-location
+spath='/home/sc_work/.sage/local/lib/python3.8/site-packages'
+import sys; sys.path.append(spath)
+import warnings; warnings.filterwarnings('ignore')
+import tensorflow_hub as th,tensorflow as tf
+import numpy as np,pandas as pd,pylab as pl,h5py,urllib
+import tensorflow.keras.callbacks as tkc,\
+tensorflow.keras.utils as tku,tensorflow.keras.layers as tkl
+</script></div><br/>
+    <h2>Image Data</h2>
+<div class='linked'><script type='text/x-sage'>
+path='https://raw.githubusercontent.com/OlgaBelitskaya/data_kitchen/main/'
+zf='Flowers128.h5'; input_file=urllib.request.urlopen(path+zf)
+output_file=open(zf,'wb'); output_file.write(input_file.read())
+output_file.close(); input_file.close()
+with h5py.File(zf,'r') as f:
+    keys=list(f.keys())
+    pretty_print(html(
+        '<p style="color:darkorange">file keys: '+', '.join(keys)+'</p>'))
+    images=np.array(f[keys[0]]); labels=np.array(f[keys[1]])
+    names=[el.decode('utf-8')for el in f[keys[2]]]
+    f.close()
+N=labels.shape[0]; n=int(.1*N); shuffle_ids=np.arange(N)
+np.random.RandomState(12).shuffle(shuffle_ids)
+images=images[shuffle_ids]; labels=labels[shuffle_ids]
+x_test,x_valid,x_train=images[:n],images[n:2*n],images[2*n:]
+y_test,y_valid,y_train=labels[:n],labels[n:2*n],labels[2*n:]
+df=pd.DataFrame(
+    [[x_train.shape,x_valid.shape,x_test.shape],
+     [x_train.dtype,x_valid.dtype,x_test.dtype],
+     [y_train.shape,y_valid.shape,y_test.shape],
+     [y_train.dtype,y_valid.dtype,y_test.dtype]],
+    columns=['train','valid','test'],
+    index=['image shape','image type','label shape','label type'])
+fig=pl.figure(figsize=(8,4)); n=randint(1,100)
+for i in range(n,n+6):
+    ax=fig.add_subplot(2,3,i-n+1,xticks=[],yticks=[])
+    ax.set_title(
+        names[labels[i]],color='slategray',fontdict={'fontsize':'large'})
+    ax.imshow((images[i]))
+pl.tight_layout(); pl.show(); display(df)
+</script></div><br/>
+    <h2>Helpful Functions</h2>
+<div class='linked'><script type='text/x-sage'>
+def premodel(pix,den,mh,lbl,activ,loss):
+    model=tf.keras.Sequential([
+        tkl.Input((pix,pix,int(3)),name='input'),
+        th.KerasLayer(mh,trainable=True),
+        tkl.Flatten(),
+        tkl.Dense(den,activation='relu'),
+        tkl.Dropout(rate=.5),
+        tkl.Dense(lbl,activation=activ)])
+    model.compile(optimizer='adam',metrics=['accuracy'],loss=loss)
+    return model
+def cb(fw):
+    early_stopping=tkc.EarlyStopping(
+        monitor='val_loss',patience=int(20),verbose=int(2))
+    checkpointer=tkc.ModelCheckpoint(
+        filepath=fw,verbose=int(2),save_weights_only=True,
+        monitor='val_accuracy',mode='max',save_best_only=True)
+    lr_reduction=tkc.ReduceLROnPlateau(
+        monitor='val_loss',verbose=int(2),patience=int(5),factor=.8)
+    return [checkpointer,early_stopping,lr_reduction]
+</script></div><br/>
+    <h2>Model Training</h2>
+<div class='linked'><script type='text/x-sage'>
+fw='/tmp/checkpoint'
+[handle_base,pixels]=['mobilenet_v2_100_128',int(128)]
+mhandle='https://tfhub.dev/google/imagenet/{}/classification/4'\
+.format(handle_base)
+model=premodel(pixels,int(512),mhandle,int(20),
+               'softmax','sparse_categorical_crossentropy')
+history=model.fit(x=x_train,y=y_train,batch_size=int(32),
+                  epochs=int(1),callbacks=cb(fw),verbose=int(0),
+                  validation_data=(x_valid,y_valid))
+</script></div><br/>
+    <h2>Model Evaluation</h2>
+<div class='linked'><script type='text/x-sage'>
+model.load_weights(fw)
+model.evaluate(x_test,y_test,verbose=int(0))
+</script></div><br/>
+  </body>
+</html>

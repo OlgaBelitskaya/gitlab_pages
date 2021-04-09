@@ -1,0 +1,303 @@
+<!DOCTYPE HTML>
+<html>
+  <head>
+    <meta charset='utf-8'>
+    <meta name='viewport' content='width=device-width'>
+    <title>🏙 DL PP7_1 SMC</title>
+    <script src='https://sagecell.sagemath.org/static/embedded_sagecell.js'></script>
+    <script>$(function(){
+      sagecell.makeSagecell(
+        {inputLocation:'div.linked',linked:true,evalButtonText:'run linked cells'});});
+    </script>
+  </head>
+  <style>
+    @import 'https://fonts.googleapis.com/css?family=Akronim|Lobster';
+    h1,h2,th {color:#348ABD; font-family:Akronim; font-size:120%; text-shadow:4px 4px 4px #aaa;}
+    p,a {color:slategray; font-family:Lobster; font-size:120%; text-shadow:4px 4px 4px #aaa;}
+    .sagecell .CodeMirror-scroll {min-height:3em; max-height:70em;}
+    body {margin:5px 5px 5px 15px;}
+  </style>  
+  <body>
+    <h1>📑 &nbsp; Deep Learning. Practice Project 7_1: Exercises with White Flowers` Images</h1>
+<a href='https://olgabelitskaya.gitlab.io/index.html'>&#x1F300; &nbsp; Homepage &nbsp; &nbsp;</a>
+<a href='https://olgabelitskaya.gitlab.io/deep_learning_projects/index.html'>&#x1F300; &nbsp; Project List &nbsp; &nbsp;</a>
+<a href='https://olgabelitskaya.github.io/README.html'>&#x1F300; &nbsp; GitHub Pages &nbsp; &nbsp;</a>
+<a href='https://olgabelitskaya.gitlab.io/deep_learning_projects/DL_PP6_0_SMC.html'>
+&#x1F300; &nbsp; Previous &nbsp; &nbsp;</a>
+<a href='https://olgabelitskaya.gitlab.io/deep_learning_projects/DL_PP7_0_SMC.html'>
+&#x1F300; &nbsp; Main &nbsp; &nbsp;</a>
+<a href='https://olgabelitskaya.gitlab.io/deep_learning_projects/DL_PP8_0_SMC.html'>
+&#x1F300; &nbsp; Next &nbsp; &nbsp;</a><br/>
+<a href='https://www.instagram.com/olga.belitskaya/'>&#x1F300; &nbsp; Instagram Posts &nbsp; &nbsp;</a>
+<a href='https://www.pinterest.ru/olga_belitskaya/code-style/'>&#x1F300; &nbsp; Pinterest Posts</a><br/>
+In this project, we'll classify images from the dataset
+<a href='https://www.kaggle.com/olgabelitskaya/white-flowers'>White Flowers</a>.<br/>
+The content is about 500-600 images (128x128x3) with photos of white flowers
+stored in the file of <i>Hierarchical Data Format (HDF5)</i>.<br/>
+In the original dataset, photo files have the extension PNG and they are labeled by file prefixes.<br/>
+We'll preprocess the images, represent their examples, then train neural networks.<br/> 
+    <h2>✒️ &nbsp; Code Modules, Functions, & Settings</h2>      
+<div class='linked'><script type='text/x-sage'>
+!python3 -m pip install tensorflow_hub --user --quiet --no-warn-script-location
+path='/home/sc_work/.sage/local/lib/python3.8/site-packages'
+import sys,warnings; sys.path.append(path); warnings.filterwarnings('ignore')
+from IPython.display import display,HTML
+from IPython.core.magic import register_line_magic
+import tensorflow as tf,tensorflow_hub as hub,numpy as np
+import os,h5py,urllib,cv2,pandas as pd,pylab as pl
+from IPython.display import HTML
+HTML('<style>.sagecell_input {text-shadow:4px 4px 4px #aaa;}</style>')
+</script></div><br/>
+<div class='linked'><script type='text/x-sage'>
+def get_data(file_path,file_name,img_size):
+    input_file=urllib.request.urlopen(file_path+file_name)
+    output_file=open(file_name,'wb')
+    output_file.write(input_file.read())
+    output_file.close(); input_file.close()
+    with h5py.File(file_name,'r') as f:
+        keys=list(f.keys())
+        pretty_print(html('<p>file keys: '+', '.join(keys)+'</p>'))
+        images=np.array(f[keys[0]])
+        images=tf.image.resize(images,[img_size,img_size]).numpy()
+        labels=np.array(f[keys[1]])
+        names=[el.decode('utf-8') for el in f[keys[2]]]
+        f.close()
+    pretty_print(html('<p>%s'%names+'</p>'))
+    return images,labels,names
+def display_imgs(images,labels,names,start):
+    fig=pl.figure(figsize=(6,3)); n=randint(0,start-1)
+    for i in range(n,n+6):
+        ax=fig.add_subplot(2,3,i-n+1,xticks=[],yticks=[])
+        ax.set_title(
+            names[labels[i]],color='slategray',fontdict={'fontsize':'large'})
+        ax.imshow((images[i]))
+    pl.tight_layout(); pl.show()
+def get_file(file_path,file_name):
+    input_file=urllib.request.urlopen(file_path+file_name)
+    output_file=open(file_name,'wb')
+    output_file.write(input_file.read())
+    output_file.close(); input_file.close()
+def highpass_xy(img):
+    x_var=img[:,:,int(1):,:]-img[:,:,:-int(1),:]
+    y_var=img[:,int(1):,:,:]-img[:,:-int(1),:,:]
+    return x_var,y_var
+def clip01(img):
+    return tf.clip_by_value(
+        img,clip_value_min=float(0.),clip_value_max=float(1.))
+def load_img(file_name,max_dim=int(512)):
+    img=tf.io.read_file(file_name)
+    img=tf.image.decode_image(img,channels=int(3))
+    img=tf.image.convert_image_dtype(img,tf.float32)
+    shape=tf.cast(tf.shape(img)[:-int(1)],tf.float32)
+    scale=max_dim/max(shape)
+    new_shape=tf.cast(shape*scale,tf.int32)
+    img=tf.image.resize(img,new_shape)
+    return img[tf.newaxis,:]
+</script></div><br/>     
+    <h2>✒️ &nbsp; Data Loading</h2> 
+<div class='linked'><script type='text/x-sage'>
+file_path='https://raw.githubusercontent.com/OlgaBelitskaya/data_kitchen/main/'
+file_name='WhiteFlowers128.h5'; img_size=int(64)
+images,labels,names=get_data(file_path,file_name,img_size)
+</script></div><br/>
+    <h2>✒️ &nbsp; Data Processing</h2>  
+<div class='linked'><script type='text/x-sage'>
+N=labels.shape[0]; n=int(.1*N)
+num_classes=len(names); start=int(100) 
+shuffle_ids=np.arange(N)
+np.random.RandomState(12).shuffle(shuffle_ids)
+images=images[shuffle_ids]; labels=labels[shuffle_ids]
+x_test,x_valid,x_train=images[:n],images[n:2*n],images[2*n:]
+y_test,y_valid,y_train=labels[:n],labels[n:2*n],labels[2*n:]
+df=pd.DataFrame(
+    [[x_train.shape,x_valid.shape,x_test.shape],
+     [x_train.dtype,x_valid.dtype,x_test.dtype],
+     [y_train.shape,y_valid.shape,y_test.shape],
+     [y_train.dtype,y_valid.dtype,y_test.dtype]],
+    columns=['train','valid','test'],
+    index=['image shape','image type','label shape','label type'])
+display_imgs(images,labels,names,start); display(df)
+</script></div><br/>
+    <h2>✒️ &nbsp; Super Resolution</h2>
+<div class='linked'><script type='text/x-sage'>
+def esrgantf2_superresolution(img,img_size=int(50)):
+    model=hub.load('https://tfhub.dev/captain-pool/esrgan-tf2/1')
+    func=model.signatures[tf.saved_model.DEFAULT_SERVING_SIGNATURE_DEF_KEY]
+    func.inputs[int(0)].set_shape([int(1),img_size,img_size,int(3)])
+    converter=tf.lite.TFLiteConverter.from_concrete_functions([func])
+    converter.optimizations=[tf.lite.Optimize.DEFAULT]
+    tflite_model=converter.convert()
+    with tf.io.gfile.GFile('ESRGAN.tflite','wb') as f:
+        f.write(tflite_model)
+    esrgan_model_path='./ESRGAN.tflite'
+    if img.mean()<float(1): img=img*float(255)
+    lr=tf.image.resize(img,[img_size,img_size])
+    lr=tf.expand_dims(lr.numpy()[:,:,:int(3)],axis=int(0))
+    lr=tf.cast(lr,tf.float32)
+    interpreter=tf.lite.Interpreter(model_path=esrgan_model_path)
+    interpreter.allocate_tensors()
+    input_details=interpreter.get_input_details()
+    output_details=interpreter.get_output_details()
+    interpreter.set_tensor(input_details[int(0)]['index'],lr)
+    interpreter.invoke()
+    output_data=interpreter.get_tensor(output_details[int(0)]['index'])
+    sr=tf.squeeze(output_data,axis=int(0))
+    sr=tf.clip_by_value(sr,int(0),int(255))
+    sr=tf.round(sr); sr=tf.cast(sr,tf.uint8)
+    lr=tf.cast(tf.squeeze(lr,axis=int(0)),tf.uint8)
+    return lr,sr
+lr,sr=esrgantf2_superresolution(images[start],img_size)
+</script></div><br/>
+<div class='linked'><script type='text/x-sage'>
+def low2superbicubic_imgs(lr,sr):
+    pl.figure(figsize=(8,4)); pl.title(f'lr')
+    pl.imshow(lr.numpy()); pl.show()
+    pl.figure(figsize=(8,4))
+    pl.subplot(1,2,1); pl.title(f'esrgan x4')
+    pl.imshow(sr.numpy())
+    img_size=lr.shape[int(1)]
+    bicubic=tf.image.resize(
+        lr,[img_size*int(4),img_size*int(4)],
+        tf.image.ResizeMethod.BICUBIC)
+    bicubic_contrast=tf.image.adjust_contrast(bicubic,float(.8))
+    bicubic_contrast=tf.cast(bicubic_contrast,tf.uint8)
+    pl.subplot(1,2,2); pl.title(f'bicubic & contrast')
+    pl.imshow(bicubic_contrast.numpy())
+    pl.tight_layout(); pl.show()
+low2superbicubic_imgs(lr,sr)
+</script></div><br/>
+    <h2>✒️ &nbsp; OpenCV Image Manipulations</h2>
+<div class='linked'><script type='text/x-sage'>
+file_path2='https://raw.githubusercontent.com/OlgaBelitskaya/data/main/white_flowers/'
+file_name2='01_036.png'
+get_file(file_path2,file_name2)
+img=cv2.imread(file_name2)
+img=cv2.resize(img,(int(256),int(192)))
+gray=cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
+rgb=cv2.cvtColor(img,cv2.COLOR_BGR2RGB)
+hsv=cv2.cvtColor(img,cv2.COLOR_BGR2HSV)
+edge_img=rgb.copy(); edge=cv2.Canny(gray,int(80),int(210))
+edge_img[edge!=0]=(255,0,255) 
+lower=np.array([10,200,150]); upper=np.array([30,255,255])
+mask=cv2.inRange(hsv,lower,upper)
+result=cv2.bitwise_and(img,img,mask=mask)
+kernel=np.ones((11,11),np.uint8)
+gradient=cv2.morphologyEx(img,cv2.MORPH_GRADIENT,kernel)
+sobel=cv2.Sobel(
+    gray,cv2.CV_64F,int(1),int(0),ksize=int(27))
+laplacian=cv2.Laplacian(img,cv2.CV_64F)
+pl.figure(figsize=(10,6))
+pl.subplot(331),pl.imshow(cv2.bitwise_not(rgb)),pl.title('bitwise_not')
+pl.subplot(332),pl.imshow(cv2.cvtColor(hsv,cv2.COLOR_HSV2RGB))
+pl.title('hsv2rgb')
+pl.subplot(333),pl.imshow(gray,cmap='bone'),pl.title('gray2bone')
+pl.subplot(334),pl.imshow(edge_img),pl.title('edges2magenta')
+pl.subplot(335),pl.imshow(edge,cmap='flag_r'),pl.title('edges2flag_r')
+pl.subplot(336),pl.imshow(gradient),pl.title('morphology_gradient')
+pl.subplot(337),pl.imshow(
+    cv2.cvtColor(result,cv2.COLOR_BGR2RGB)),pl.title('hsv_mask')
+pl.subplot(338),pl.imshow(sobel,cmap='bone'),pl.title('sobel')
+pl.subplot(339),pl.imshow(laplacian,cmap='bone'),pl.title('laplacian')
+pl.tight_layout(); pl.show()
+</script></div><br/>
+<div class='linked'><script type='text/x-sage'>
+values=[0,1,..,255]
+@interact
+def _(red=slider(values,default=15),
+      green=slider(values,default=127),
+      blue=slider(values,default=15),
+      step=[15,14,..,1]):
+    [r,g,b]=[red,green,blue]
+    min_rgb=[max(0,x-4*step) for x in [r,g,b]]
+    max_rgb=[min(255,x+4*step) for x in [r,g,b]]
+    pretty_print('min rgb: %s; '%str(min_rgb)+\
+                 'rgb: %s; '%str([r,g,b])+\
+                 'max rgb: %s; '%str(max_rgb))
+    m=[[[r+i*step,g,b] for i in range(-4,5,1)],
+       [[r,g+i*step,b] for i in range(-4,5,1)],
+       [[r,g,b+i*step] for i in range(-4,5,1)],
+       [[r+i*step,g+i*step,b] for i in range(-4,5,1)],
+       [[r,g+i*step,b+i*step] for i in range(-4,5,1)],
+       [[r+i*step,g,b+i*step] for i in range(-4,5,1)],
+       [[r+i*step,g+i*step,b+i*step] for i in range(-4,5,1)]]
+    tf=[[-4,-3,-2,-1,0,1,2,3,4],['r','g','b','rg','gb','rb','rgb']]
+    p=matrix_plot(np.array(m)/255,ticks=[[0..8],[0..6]],tick_formatter=tf)
+    p.show()
+    hsv=cv2.cvtColor(np.uint8([[[r,g,b]]]),cv2.COLOR_BGR2HSV)
+    min_hsv=cv2.cvtColor(np.uint8([[min_rgb]]),cv2.COLOR_BGR2HSV)
+    max_hsv=cv2.cvtColor(np.uint8([[max_rgb]]),cv2.COLOR_BGR2HSV)
+    pretty_print('min rgb -> hsv: %s; '%str(min_hsv[0][0])+\
+                 'rgb -> hsv: %s; '%str(hsv[0][0])+\
+                 'max rgb -> hsv: %s; '%str(max_hsv[0][0]))
+</script></div><br/> 
+<div class='linked'><script type='text/x-sage'>
+@interact(layout=dict(
+    top=[['file'],['lower_red','lower_green','lower_blue'],
+         ['upper_red','upper_green','upper_blue']]))
+def _rgb2hsv(file=[1,2,3,6,7],
+             lower_red=slider(values,default=0),
+             lower_green=slider(values,default=0),
+             lower_blue=slider(values,default=0),
+             upper_red=slider(values,default=50),
+             upper_green=slider(values,default=127),
+             upper_blue=slider(values,default=50)):
+    file_path='https://raw.githubusercontent.com/OlgaBelitskaya/data/main/white_flowers/'
+    file_name='01_00%s'%(file)+'.png'
+    get_file(file_path,file_name)
+    img=cv2.imread(file_name)
+    rgb=cv2.cvtColor(img,cv2.COLOR_BGR2RGB)
+    hsv=cv2.cvtColor(img,cv2.COLOR_BGR2HSV)
+    [lr,lg,lb]=[lower_red,lower_green,lower_blue]
+    [ur,ug,ub]=[upper_red,upper_green,upper_blue]
+    lower_hsv=cv2.cvtColor(np.uint8([[[lr,lg,lb]]]),cv2.COLOR_BGR2HSV)[0][0]
+    upper_hsv=cv2.cvtColor(np.uint8([[[ur,ug,ub]]]),cv2.COLOR_BGR2HSV)[0][0]
+    mask=cv2.inRange(hsv,np.array(lower_hsv),np.array(upper_hsv))   
+    result=cv2.bitwise_and(img,img,mask=mask)
+    result_rgb=cv2.cvtColor(result,cv2.COLOR_BGR2RGB)
+    pretty_print('lower rgb -> hsv: %s; '%str(lower_hsv)+\
+                 'upper rgb -> hsv: %s; '%str(upper_hsv))
+    for el in [rgb,mask,result_rgb]:
+         matrix_plot(el/255).show(frame=False,figsize=(3.5,3.5))
+</script></div><br/>
+    <h2>✒️ &nbsp; TensorFlow Image Manipulations</h2>
+<div class='linked'><script type='text/x-sage'>
+@interact(layout=dict(top=[['file'],['contrast','brightness']]))
+def _tfimg(file=slider([1..60],default=30),
+           contrast=slider([.05,.1,..,1.95],default=1.5),
+           brightness=slider([.05,.1,..,1.05],default=.5)):
+    file_path='https://raw.githubusercontent.com/OlgaBelitskaya/data/main/white_flowers/'
+    file_name='02_%03d'%(file)+'.png'
+    get_file(file_path,file_name)
+    original_img=load_img(file_name)
+    gray_img=np.dot(original_img[...,:int(3)],[.299,.587,.114])
+    contrast_img=tf.image.adjust_contrast(
+        original_img,float(contrast))
+    brightness_img=tf.image.adjust_brightness(
+        original_img,float(brightness))
+    x_deltas,y_deltas=highpass_xy(original_img)
+    sobel=tf.image.sobel_edges(original_img)
+    pl.figure(figsize=(10,6))
+    pl.subplot(2,4,1),pl.imshow(tf.squeeze(clip01(original_img)))
+    pl.title('rgb || original')
+    pl.subplot(2,4,2),pl.imshow(tf.squeeze(clip01(gray_img)),cmap='bone')
+    pl.title('gray || original')
+    pl.subplot(2,4,3),pl.imshow(tf.squeeze(clip01(brightness_img)))
+    pl.title('brightness || original')
+    pl.subplot(2,4,4),pl.imshow(tf.squeeze(clip01(contrast_img)))
+    pl.title('contrast || original')
+    pl.subplot(2,4,5)
+    pl.imshow(tf.squeeze(clip01(int(2)*y_deltas+float(.5))))
+    pl.title('horizontal deltas || original')
+    pl.subplot(2,4,6)
+    pl.imshow(tf.squeeze(clip01(int(2)*x_deltas+float(.5))))
+    pl.title('vertical deltas || original')
+    pl.subplot(2,4,7)
+    pl.imshow(tf.squeeze(clip01(sobel[...,int(0)]/int(4)+float(.5))))
+    pl.title('horizontal sobel-edges')
+    pl.subplot(2,4,8)
+    pl.imshow(tf.squeeze(clip01(sobel[...,int(1)]/int(4)+float(.5))))
+    pl.title('vertical sobel-edges');
+    pl.tight_layout(); pl.show()
+</script></div><br/>
+  </body>
+</html>

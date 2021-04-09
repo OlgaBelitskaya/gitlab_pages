@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<meta charset='utf-8'>
+<style>
+  @import 'https://fonts.googleapis.com/css?family=Akronim';
+  .h1 {font-family:Akronim; font-size:160%; text-shadow:3px 3px 3px #aaa;}
+  a {color:slategray; font-size:110%; text-shadow:3px 3px 3px #aaa;}
+  body {max-width:95%; margin:5px 5px 5px 15px; padding: 0 1em;}
+</style>
+  <div class='navbar'>
+    <a href='https://olgabelitskaya.gitlab.io/index.html'>🌐 &nbsp; Homepage &nbsp; &nbsp;</a>
+    <a href='https://olgabelitskaya.gitlab.io/experiments/index.html'>🌐 &nbsp; Experiment List &nbsp; &nbsp;</a>
+    <a href='https://olgabelitskaya.github.io/README.html'>🌐 &nbsp; GitHub Pages &nbsp; &nbsp;</a> 
+  </div>
+  <h1 class='h1' id='colored_header1'>The Observable notebook is embedded as an iframe.</h1>
+  <iframe id='embed' width='90%' frameborder='0' 
+    src='https://observablehq.com/embed/@olgabelitskaya/styling-of-mouse-events?cell=*'>
+  </iframe>
+<script type='module'>
+const iframe=document.querySelector('#embed');
+function onMessage(message) {
+  if (message.source!==iframe.contentWindow) return;
+  let {data}=message;
+  if (typeof data==='string') { try {data=JSON.parse(data);} catch (ignore) {return;} }
+  if (data.context!=='iframe.resize') return;
+  iframe.style.height=`${data.height}px`; }
+addEventListener('message',onMessage);
+var tc=setInterval(function() {
+  var doc1=document.getElementById('colored_header1');
+  var now=Math.floor((new Date().getTime()%(1000*60))/1000);
+  var col='rgb('+(10+Math.abs(245-8*now))+',0,'+(255-Math.abs(245-8*now))+')';
+  doc1.style.color=col}, 1000);
+</script>

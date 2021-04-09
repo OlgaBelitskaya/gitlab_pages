@@ -1,0 +1,247 @@
+<!DOCTYPE HTML>
+<html>
+  <head>
+    <meta charset='utf-8'>
+    <meta name='viewport' content='width=device-width'>
+    <title>🏙 DL PP8_2 SMC</title>
+    <script src='https://sagecell.sagemath.org/static/embedded_sagecell.js'></script>
+    <script>$(function(){
+      sagecell.makeSagecell(
+        {inputLocation:'div.linked',linked:true,evalButtonText:'run linked cells'});});
+    </script>
+  </head>
+  <style>
+    @import 'https://fonts.googleapis.com/css?family=Akronim|Lobster';
+    h1,h2,th {color:#348ABD; font-family:Akronim; font-size:120%; text-shadow:4px 4px 4px #aaa;}
+    p,a {color:slategray; font-family:Lobster; font-size:120%; text-shadow:4px 4px 4px #aaa;}
+    .sagecell .CodeMirror-scroll {min-height:3em; max-height:70em;}
+    body {margin:5px 5px 5px 15px;}
+  </style>  
+  <body>
+    <h1>📑 &nbsp; Deep Learning. Practice Project 8_2: Exercises with Drawing Images</h1>
+<a href='https://olgabelitskaya.gitlab.io/index.html'>&#x1F300; &nbsp; Homepage &nbsp; &nbsp;</a>
+<a href='https://olgabelitskaya.gitlab.io/deep_learning_projects/index.html'>
+&#x1F300; &nbsp; Project List &nbsp; &nbsp;</a>
+<a href='https://olgabelitskaya.github.io/README.html'>&#x1F300; &nbsp; GitHub Pages &nbsp; &nbsp;</a>
+<a href='https://olgabelitskaya.gitlab.io/deep_learning_projects/DL_PP7_0_SMC.html'>
+&#x1F300; &nbsp; Previous &nbsp; &nbsp;</a>
+<a href='https://olgabelitskaya.gitlab.io/deep_learning_projects/DL_PP8_0_SMC.html'>
+&#x1F300; &nbsp; Main &nbsp; &nbsp;</a>
+<a href='https://www.instagram.com/olga.belitskaya/'>&#x1F300; &nbsp; Instagram Posts &nbsp; &nbsp;</a>
+<a href='https://www.pinterest.ru/olga_belitskaya/code-style/'>&#x1F300; &nbsp; Pinterest Posts</a><br/>
+In this project, we'll classify images from the dataset
+<a href='https://www.kaggle.com/olgabelitskaya/art-pictogram'>Art Pictograms</a>.<br/>
+The content is about 3500 images (64x64x3) with drawings
+stored in the file of <i>Hierarchical Data Format (HDF5)</i>.<br/>
+In the original dataset, photo files have the extension PNG and they are labeled by file prefixes.<br/>
+We'll preprocess the images, represent their examples, then train neural networks.<br/> 
+We are going to apply 
+<a href='https://keras.io/'>Keras: a Python Deep Learning Library</a>.<br/>
+    <h2>✒️ &nbsp; Code Modules, Helpful Functions, & Settings</h2>      
+<div class='linked'><script type='text/x-sage'>
+!python3 -m pip install tensorflow_hub --user --quiet --no-warn-script-location
+path='/home/sc_work/.sage/local/lib/python3.8/site-packages'
+import sys,warnings; sys.path.append(path); warnings.filterwarnings('ignore')
+import os,h5py,urllib,pandas as pd,numpy as np,pylab as pl,seaborn as sn
+import tensorflow as tf,tensorflow_hub as hub
+style_hub_path='https://tfhub.dev/google/magenta/arbitrary-image-stylization-v1-256/2'
+super_hub_path='https://tfhub.dev/captain-pool/esrgan-tf2/1'
+os.environ['TFHUB_MODEL_LOAD_FORMAT']='COMPRESSED'
+file_path='https://raw.githubusercontent.com/OlgaBelitskaya/data_kitchen/main/'
+file_name='Pictograms64.h5'
+img_size=int(64); max_dim=int(224); lr_size=int(32)
+style_model=hub.load(style_hub_path)
+from tensorflow.keras.applications import vgg19,VGG19
+mvgg19=VGG19(include_top=True,weights='imagenet')
+super_model=hub.load(super_hub_path)
+func=super_model.signatures[tf.saved_model.DEFAULT_SERVING_SIGNATURE_DEF_KEY]
+func.inputs[0].set_shape([1,lr_size,lr_size,3])
+converter=tf.lite.TFLiteConverter.from_concrete_functions([func])
+converter.optimizations=[tf.lite.Optimize.DEFAULT]
+tflite_super_model=converter.convert()
+with tf.io.gfile.GFile('ESRGAN.tflite','wb') as f:
+    f.write(tflite_super_model)
+esrgan_model_path='./ESRGAN.tflite'
+</script></div><br/>
+<div class='linked'><script type='text/x-sage'>      
+def pd_style():
+    return [dict(selector='th',props=[('font-size','12pt'),('min-width','150px')]),
+            dict(selector='td',props=[('padding','0em 0em'),('min-width','150px')]),
+            dict(selector='tr:hover th:hover',
+                 props=[('font-size','14pt'),('max-width','150px'),
+                        ('text-shadow','3px 3px 3px #aaa')]),
+            dict(selector='tr:hover td:hover',
+                 props=[('font-size','12pt'),('max-width','150px'),
+                        ('text-shadow','3px 3px 3px #aaa')])]
+def display_images(images,labels,names,n):
+    fig=pl.figure(figsize=(9,n/2))
+    randch=np.random.choice(images.shape[0],size=n,replace=False)
+    for i,idx in enumerate(randch):
+        ax=fig.add_subplot(int(n//5)+1,5,i+1,xticks=[],yticks=[])
+        ax.imshow(images[idx],cmap='bone')
+        label=[labels[:,idx]]
+        name=[names[i][labels[i][idx]] for i in range(labels.shape[0])]
+        ti='{} \n {}'.format(str(label),str(name))
+        ax.set_title(ti,fontsize=8)
+    pl.tight_layout(); pl.show()
+def img2tensor(img,max_dim=max_dim):
+    shape=tf.cast(tf.shape(img)[:-int(1)],tf.float32)
+    scale=max_dim/max(shape)
+    new_shape=tf.cast(shape*scale,tf.int32)
+    img=tf.image.resize(img,new_shape)
+    return tf.constant(img[tf.newaxis,:])
+def tensor2img(tensor,frame=False,fig_size=2):
+    if np.ndim(tensor)>int(3):
+        assert tensor.shape[int(0)]==int(1); tensor=tensor[int(0)]
+    return matrix_plot(tensor,frame=frame,figsize=(fig_size,fig_size))
+def interpolate_hypersphere(v1,v2,steps):
+    v1norm=tf.norm(v1); v2norm=tf.norm(v2); vectors=[]
+    v2normalized=v2*(v1norm/v2norm)
+    for step in range(steps):
+        interpolated=v1+(v2normalized-v1)*step/(steps-int(1))
+        interpolated_norm=tf.norm(interpolated)
+        interpolated_normalized=interpolated*(v1norm/interpolated_norm)
+        vectors.append(interpolated_normalized)
+    return tf.stack(vectors)
+</script></div><br/> 
+<div class='linked'><script type='text/x-sage'>      
+def h5file2data(h5file,cmap,img_size,resize=False):
+    with h5py.File(h5file,'r') as f:
+        keys=list(f.keys())
+        pretty_print('file keys: '+', '.join(keys))
+        images=np.array(f[keys[int(0)]])
+        labels=np.array(f[keys[int(1)]])
+        names=[[el.decode('utf-8') for el in f[keys[i]]]
+               for i in range(int(2),len(keys))]
+        f.close()
+    if resize:
+        images=tf.image.resize(images,[img_size,img_size]).numpy()
+    N=images.shape[0]; shuffle_ids=np.arange(N)
+    np.random.RandomState(12).shuffle(shuffle_ids)
+    images=images[shuffle_ids]
+    labels=np.array([labels[i][shuffle_ids] for i in range(labels.shape[int(0)])])
+    pretty_print('data outputs: ')
+    df=pd.DataFrame([[images.shape,images.dtype],[labels.shape,labels.dtype]],
+                    columns=['shape','dtype'],index=['images','labels'])
+    display(df.style.set_table_styles(pd_style()))
+    pretty_print('distribution of labels: ')
+    idx=['labels %d'%(i+int(1)) for i in range(labels.shape[int(0)])]
+    df=pd.DataFrame(labels,index=idx).T
+    for i in range(labels.shape[int(0)]):
+        df['name %d'%(i+int(1))]=[names[i][l] for l in labels[i]]
+    fig=pl.figure(figsize=(9,6))    
+    for i in range(labels.shape[int(0)]):
+        ax=fig.add_subplot(labels.shape[int(0)],int(1),i+int(1))
+        sn.countplot(x='name %s'%(i+1),data=df,palette=cmap,alpha=.5,ax=ax)
+    pl.tight_layout(); pl.show()       
+    return [names,images,labels]
+</script></div><br/>
+    <h2>✒️ &nbsp; Data Loading & Processing</h2>
+<div class='linked'><script type='text/x-sage'>      
+input_file=urllib.request.urlopen(file_path+file_name)
+output_file=open(file_name,'wb')
+output_file.write(input_file.read())
+output_file.close(); input_file.close()
+[names,images,labels]=h5file2data(file_name,'tab20',img_size)
+num_classes=len(names[int(1)])
+display_images(images,labels,names,10)
+os.remove(file_name)
+</script></div><br/>
+   <h2>✒️ &nbsp; Color Interpolation</h2>
+<div class='linked'><script type='text/x-sage'>      
+@interact(layout=dict(top=[['interpolation_steps'],['image_type1','image_object1'],
+                           ['image_type2','image_object2']]))
+def _pictograms(interpolation_steps=slider([20,30,..,60]),
+                image_type1=selector(names[0],default='pictogram'),
+                image_object1=selector(names[1],default='flower'),
+                image_type2=selector(names[0],default='pictogram'),
+                image_object2=selector(names[1],default='bird')):
+    steps=int(interpolation_steps); global names,images,labels
+    names1=[names[0].index(image_type1),names[1].index(image_object1)]
+    names2=[names[0].index(image_type2),names[1].index(image_object2)]
+    cond1=np.intersect1d(np.where(labels[0]==names1[0]),np.where(labels[1]==names1[1]))
+    cond2=np.intersect1d(np.where(labels[0]==names2[0]),np.where(labels[1]==names2[1]))
+    images1=images[cond1]; len1=images1.shape[0]
+    images2=images[cond2]; len2=images2.shape[0]
+    img1=images1[randint(0,len1-1)]; img2=images2[randint(0,len2-1)]
+    tensor2img(img1).show(); tensor2img(img2).show()
+    imgs=np.vstack([interpolate_hypersphere(img1,img2,steps),
+                    interpolate_hypersphere(img2,img1,steps)])
+    animate([tensor2img(imgs[i]) for i in range(2*steps)]).show()
+</script></div><br/>
+    <h2>✒️ &nbsp; Style Transfer</h2>
+<div class='linked'><script type='text/x-sage'>      
+@interact(layout=dict(
+    top=[['original_type','original_object'],['style_type','style_object']]))
+def _pictograms(original_type=selector(names[0],default='contour'),
+                original_object=selector(names[1],default='butterfly'),
+                style_type=selector(names[0],default='pictogram'),
+                style_object=selector(names[1],default='butterfly')):
+    global names,images,labels,style_model
+    original_names=[names[0].index(original_type),names[1].index(original_object)]
+    style_names=[names[0].index(style_type),names[1].index(style_object)]
+    original_cond=np.intersect1d(
+        np.where(labels[0]==original_names[0]),np.where(labels[1]==original_names[1]))
+    style_cond=np.intersect1d(
+        np.where(labels[0]==style_names[0]),np.where(labels[1]==style_names[1]))
+    original_images=images[original_cond]; original_len=original_images.shape[0]
+    style_images=images[style_cond]; style_len=style_images.shape[0]
+    original_img=original_images[randint(0,original_len-1)]
+    style_img=style_images[randint(0,style_len-1)]
+    tensor2img(original_img).show(); tensor2img(style_img).show()
+    stylized_img=style_model(img2tensor(original_img,max_dim=int(256)),
+                             img2tensor(style_img,max_dim=int(256)))[int(0)]
+    tensor2img(stylized_img).show()
+</script></div><br/> 
+    <h2>✒️ &nbsp; Object Recognition</h2> 
+<div class='linked'><script type='text/x-sage'>      
+@interact(layout=dict(
+    top=[['original_type','original_object']]))
+def _pictograms(original_type=selector(names[0],default='pictogram'),
+                original_object=selector(names[1],default='dog')):
+    global names,images,labels,mvgg19
+    original_names=[names[0].index(original_type),names[1].index(original_object)]
+    original_cond=np.intersect1d(
+        np.where(labels[0]==original_names[0]),np.where(labels[1]==original_names[1]))
+    original_images=images[original_cond]; original_len=original_images.shape[0]
+    original_img=original_images[randint(0,original_len-1)]
+    original_img=img2tensor(original_img)
+    x=vgg19.preprocess_input(original_img*(int(255)))
+    prediction_probabilities=mvgg19(x)
+    predicted_top5=vgg19.decode_predictions(prediction_probabilities.numpy())[int(0)]
+    tensor2img(original_img,frame=True,fig_size=3).show()
+    t=[[number[1:],name.replace('_',' '),prob] for (number,name,prob) in predicted_top5]
+    display(table(t,frame=True))
+</script></div><br/> 
+    <h2>✒️ &nbsp; Super Resolution</h2> 
+<div class='linked'><script type='text/x-sage'>      
+@interact(layout=dict(
+    top=[['original_type','original_object']]))
+def _pictograms(original_type=selector(names[0],default='pictogram'),
+                original_object=selector(names[1],default='horse')):
+    global names,images,labels,esrgan_model_path,lr_size
+    original_names=[names[0].index(original_type),names[1].index(original_object)]
+    original_cond=np.intersect1d(
+        np.where(labels[0]==original_names[0]),np.where(labels[1]==original_names[1]))
+    original_images=images[original_cond]; original_len=original_images.shape[0]
+    original_img=original_images[randint(0,original_len-1)]
+    lr=tf.image.resize(original_img,[lr_size,lr_size])
+    lr=tf.expand_dims(lr.numpy()[:,:,:int(3)],axis=int(0))
+    lr=tf.cast(lr*int(255),tf.float32)
+    interpreter=tf.lite.Interpreter(model_path=esrgan_model_path)
+    interpreter.allocate_tensors()
+    input_details=interpreter.get_input_details()
+    output_details=interpreter.get_output_details()
+    interpreter.set_tensor(input_details[int(0)]['index'],lr)
+    interpreter.invoke()
+    output_data=interpreter.get_tensor(output_details[0]['index'])
+    sr=tf.squeeze(output_data,axis=int(0))
+    sr=tf.clip_by_value(sr,int(0),int(255))
+    sr=tf.cast(tf.round(sr),tf.uint8)
+    lr=tf.cast(tf.squeeze(lr,axis=int(0)),tf.uint8)
+    print('original 64x64 ===> lower resolution 32x32 ===> higher resolution 128x128')
+    for img in [original_img,lr/int(255),sr/int(255)]: 
+        tensor2img(img,frame=True,fig_size=3).show()
+</script></div><br/><br/> 
+  </body>
+</html>

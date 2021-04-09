@@ -1,0 +1,171 @@
+<!DOCTYPE HTML>
+<html>
+  <head>
+    <meta charset='utf-8'>
+    <meta name='viewport' content='width=device-width'>
+    <title>🏙 DL PP1_1 SMC</title>
+    <script src='https://sagecell.sagemath.org/static/embedded_sagecell.js'></script>
+    <script>$(function(){
+      sagecell.makeSagecell(
+        {inputLocation:'div.linked',linked:true,evalButtonText:'run linked cells'}); });
+    </script>
+  </head>
+  <style>
+    @import 'https://fonts.googleapis.com/css?family=Akronim|Lobster';
+    h1,h2,th {color:#348ABD; font-family:Akronim; font-size:120%; text-shadow:4px 4px 4px #aaa;}
+    p,a {color:slategray; font-family:Lobster; font-size:120%; text-shadow:4px 4px 4px #aaa;}
+    .sagecell .CodeMirror-scroll {min-height:3em; max-height:70em;}
+    body {margin:5px 5px 5px 15px;}
+  </style>  
+  <body>
+    <h1>📑 &nbsp; Deep Learning. Practice Project 1_1: Exercises with Regression Algorithms</h1>
+<a href='https://olgabelitskaya.gitlab.io/index.html'>&#x1F300; &nbsp; Homepage &nbsp; &nbsp;</a>
+<a href='https://olgabelitskaya.gitlab.io/deep_learning_projects/index.html'>&#x1F300; &nbsp; Project List &nbsp; &nbsp;</a>
+<a href='https://olgabelitskaya.github.io/README.html'>&#x1F300; &nbsp; GitHub Pages &nbsp; &nbsp;</a>
+<a href='https://olgabelitskaya.gitlab.io/deep_learning_projects/DL_PP0_0_SMC.html'>
+&#x1F300; &nbsp; Previous &nbsp; &nbsp;</a>
+<a href='https://olgabelitskaya.gitlab.io/deep_learning_projects/DL_PP1_0_SMC.html'>
+&#x1F300; &nbsp; Main &nbsp; &nbsp;</a>
+<a href='https://olgabelitskaya.gitlab.io/deep_learning_projects/DL_PP2_0_SMC.html'>
+&#x1F300; &nbsp; Next &nbsp; &nbsp;</a>
+<a href='https://www.instagram.com/olga.belitskaya/'>&#x1F300; &nbsp; Instagram Posts &nbsp; &nbsp;</a>
+<a href='https://www.pinterest.ru/olga_belitskaya/code-style/'>&#x1F300; &nbsp; Pinterest Posts</a><br/>
+In this project, we'll train various skills in the sphere of regression algorithms.<br/>
+Models will be trained and tested on data collected from homes in suburbs of Boston, Massachusetts.<br/>
+Origin: This dataset was taken from the StatLib library which is maintained at Carnegie Mellon University.<br/>
+Creators: Harrison, D. and Rubinfeld, D.L.<br/>
+Data Set Information: Concerns housing values in suburbs of Boston.<br/>
+    <h2>✒️&nbsp; Code Tools</h2>
+<div class='linked'><script type='text/x-sage'>
+import warnings; warnings.filterwarnings('ignore')
+import pandas as pd,numpy as np,sqlite3
+import seaborn as sn,pylab as pl,tensorflow as tf
+from sklearn import datasets
+import sklearn.model_selection as sms
+from tensorflow.data import Dataset as tds
+from IPython import display; import rpy2.robjects as ro
+from rpy2.robjects.packages import importr
+from rpy2.robjects.conversion import localconverter as lc
+from rpy2.robjects import r,pandas2ri
+pl.style.use('seaborn-whitegrid')
+from IPython.display import HTML
+HTML('<style>.sagecell_input {text-shadow:4px 4px 4px #aaa;}</style>')
+</script></div><br/>
+   <h2>✒️&nbsp;Exercise 1: Combine R & Python</h2> 
+<div class='linked'><script type='text/x-sage'>
+pandas2ri.activate()
+base=importr('base')
+bd=datasets.load_boston()
+bd=pd.DataFrame(bd.data,columns=bd.feature_names)
+#the 1th method
+bd[['PTRATIO','LSTAT','RAD']].plot(kind='line',lw=1,figsize=(9,3))
+pl.tight_layout(); pl.show()
+with lc(ro.default_converter+pandas2ri.converter):
+    print(base.summary(bd))
+</script></div><br/>    
+<div class='linked'><script type='text/x-sage'>
+#the 2nd method
+rbd=ro.conversion.py2rpy(bd)
+utils=importr('utils')
+utils.write_table(rbd,file='rbd.csv',sep=',',row_names=False)
+ro.r('rbd<-read.csv("rbd.csv")')
+ro.r('print(summary(rbd))')
+ro.r('svg(filename="Rplots.svg",width=9,height=6,'+\
+     'pointsize=12,onefile=T,family="times",bg="white",'+\
+     'antialias=c("default","none","gray","subpixel"))')
+ro.r('matplot(c(1:506),rbd[,c(9,11,13)],type="l")')
+ro.r('grid(); dev.off()')
+</script></div><br/>
+   <h2>✒️&nbsp;Exercise 2: SQL Querying</h2> 
+<div class='linked'><script type='text/x-sage'>
+def connect_to_db(dbf):
+    sqlconn=None
+    try: sqlconn=sqlite3.connect(dbf); return sqlconn
+    except Error as err:
+        print(err)
+        if sqlconn is not None: sqlconn.close()
+connection=connect_to_db('boston.db')
+if connection is not None: cursor=connection.cursor()
+boston_data=datasets.load_boston()
+columns=boston_data.feature_names
+boston_df=pd.DataFrame(boston_data.data,columns=columns)
+boston_df['MEDV']=boston_data.target
+boston_df.to_sql('main',con=connection,if_exists='replace')
+boston_df.head()
+</script></div><br/>
+<div class='linked'><script type='text/x-sage'>
+pd.read_sql_query('''
+SELECT ZN,
+       AVG(LSTAT),
+       AVG(RM),
+       AVG(PTRATIO),
+       AVG(INDUS),
+       AVG(TAX)
+FROM main
+GROUP BY ZN;
+''',con=connection)\
+.set_index('ZN').head(int(7))
+</script></div><br/>
+   <h2>✒️&nbsp;Exercise 3: Feature Types</h2> 
+<div class='linked'><script type='text/x-sage'>
+def pd_style():
+    return [dict(selector='th',
+                 props=[('font-size','10pt'),('min-width','45px')]),
+            dict(selector='td',
+                 props=[('padding','0em 0em'),('min-width','45px')]),
+            dict(selector='tr:hover th:hover',
+                 props=[('font-size','11pt'),('max-width','45px'),
+                        ('text-shadow','3px 3px 3px #aaa')]),
+            dict(selector='tr:hover td:hover',
+                 props=[('font-size','10pt'),('max-width','45px'),
+                        ('text-shadow','3px 3px 3px #aaa')])]
+boston_data=datasets.load_boston()
+columns=boston_data.feature_names
+boston_df=pd.DataFrame(boston_data.data,columns=columns)
+boston_df['MEDV']=boston_data.target
+boston_df[['CHAS','RAD']]=boston_df[['CHAS','RAD']].astype('int64')
+numeric_features=\
+boston_df.columns[[0,2,4,5,6,7,9,10,11,12,13]]
+stats=boston_df.describe().transpose()
+dfn=boston_df.copy()
+for nc in numeric_features:
+    mean=stats.loc[nc,'mean']; std=stats.loc[nc,'std']
+    dfn.loc[:,nc]=(dfn.loc[:,nc]-mean)/std
+dfn[numeric_features].tail(int(10)).style.bar(
+    align='mid',color=['#55eeee','#ee55ee'],
+    subset=numeric_features).set_precision(3)\
+   .set_table_styles(pd_style())
+</script></div><br/>
+<div class='linked'><script type='text/x-sage'>
+tfnumeric_features=[]
+for nc in numeric_features[:-1]:
+    tfnumeric_features.append(
+        tf.feature_column.numeric_column(key=nc)) 
+for nf in tfnumeric_features: 
+    print(str(nf)); break
+fchas=tf.feature_column\
+.categorical_column_with_vocabulary_list(
+    key='CHAS',vocabulary_list=[0,1])
+frad=tf.feature_column\
+.categorical_column_with_vocabulary_list(
+    key='RAD',vocabulary_list=[1,2,3,4,5,6,7,8,24])
+tfcategorical_features=[]
+fchas_emb=tf.feature_column.embedding_column(fchas,dimension=2)
+tfcategorical_features.append(fchas_emb)
+frad_emb=tf.feature_column.embedding_column(frad,dimension=9)
+tfcategorical_features.append(frad_emb)
+print(str(tfcategorical_features[0]))
+fzn=tf.feature_column.numeric_column(key='ZN')
+tfbucketized_features=[tf.feature_column.bucketized_column(
+    source_column=fzn,boundaries=[30,70,100])]
+print(str(tfbucketized_features[0]))
+features=(tfnumeric_features+tfbucketized_features+tfcategorical_features)
+dfn_train,dfn_test=sms.train_test_split(dfn,train_size=.8,shuffle=True)
+print(str([len(dfn_train),len(dfn_test)]))
+</script></div><br/>
+   <h2>✒️&nbsp;Exercise 4: Your Own Practice</h2> 
+<div class='linked'><script type='text/x-sage'>
+
+</script></div><br/>
+  </body>
+</html>

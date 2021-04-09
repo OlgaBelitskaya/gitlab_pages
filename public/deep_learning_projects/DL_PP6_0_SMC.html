@@ -1,0 +1,295 @@
+<!DOCTYPE HTML>
+<html>
+  <head>
+    <meta charset='utf-8'>
+    <meta name='viewport' content='width=device-width'>
+    <title>🏙 DL PP6_0 SMC</title>
+    <script src='https://sagecell.sagemath.org/static/embedded_sagecell.js'></script>
+    <script>$(function(){
+      sagecell.makeSagecell(
+        {inputLocation:'div.linked',linked:true,evalButtonText:'run linked cells'});});
+    </script>
+  </head>
+  <style>
+    @import 'https://fonts.googleapis.com/css?family=Akronim|Lobster';
+    h1,h2,th {color:#348ABD; font-family:Akronim; font-size:120%; text-shadow:4px 4px 4px #aaa;}
+    p,a {color:slategray; font-family:Lobster; font-size:120%; text-shadow:4px 4px 4px #aaa;}
+    .sagecell .CodeMirror-scroll {min-height:3em; max-height:70em;}
+    body {margin:5px 5px 5px 15px;}
+  </style>  
+  <body>
+    <h1>📑 &nbsp; Deep Learning. Practice Project 6_0: 
+        Processing & Classification of Tomato Cultivars` Images</h1>
+<a href='https://olgabelitskaya.gitlab.io/index.html'>&#x1F300; &nbsp; Homepage &nbsp; &nbsp;</a>
+<a href='https://olgabelitskaya.gitlab.io/deep_learning_projects/index.html'>
+&#x1F300; &nbsp; Project List &nbsp; &nbsp;</a>
+<a href='https://olgabelitskaya.gitlab.io/deep_learning_projects/DL_PP6_0_colaboratory.html'>
+&#x1F300; &nbsp; Colaboratory Gist &nbsp; &nbsp;</a>
+<a href='https://olgabelitskaya.gitlab.io/deep_learning_projects/DL_PP5_0_SMC.html'>
+&#x1F300; &nbsp; Previous &nbsp; &nbsp;</a>
+<a href='https://olgabelitskaya.gitlab.io/deep_learning_projects/DL_PP6_1_SMC.html'>
+&#x1F300; &nbsp; Addition 1 &nbsp; &nbsp;</a>
+<a href='https://olgabelitskaya.gitlab.io/deep_learning_projects/DL_PP7_0_SMC.html'>
+&#x1F300; &nbsp; Next &nbsp; &nbsp;</a><br/>
+<a href='https://olgabelitskaya.github.io/README.html'>&#x1F300; &nbsp; GitHub Pages &nbsp; &nbsp;</a>
+<a href='https://www.instagram.com/olga.belitskaya/'>&#x1F300; &nbsp; Instagram Posts &nbsp; &nbsp;</a>
+<a href='https://www.pinterest.ru/olga_belitskaya/code-style/'>&#x1F300; &nbsp; Pinterest Posts</a><br/>
+In this project, we'll classify images from the dataset
+<a href='https://www.kaggle.com/olgabelitskaya/tomato-cultivars'>Tomato Cultivars</a>.<br/>
+The content is about 700-800 images (160x160x3) with 15 tomato cultivars<br/>
+stored in the file of <i>Hierarchical Data Format (HDF5)</i> and it's in the building process.<br/>
+In the original dataset, photo files have the extension PNG and they are labeled by file prefixes.<br/>
+We'll preprocess the images, represent their examples, then train neural networks and other algorithms.<br/> 
+We are going to apply:<br/>
+1) <a href='https://scikit-learn.org/stable/'>scikit-learn: Machine Learning in Python</a><br/>
+2) <a href='https://keras.io/'>Keras: a Python Deep Learning Library</a><br/>
+3) <a href='https://pytorch.org/'>PyTorch: an Open Source Machine Learning Framework</a>.<br/>
+    <h2>✒️ &nbsp; Code Modules & Settings</h2>      
+<div class='linked'><script type='text/x-sage'>
+!python3 -m pip install torch==1.6.0 --user --quiet --no-warn-script-location
+!python3 -m pip install torchvision==0.7.0 --user --quiet --no-warn-script-location
+path='/home/sc_work/.sage/local/lib/python3.8/site-packages'
+import sys,warnings; sys.path.append(path); warnings.filterwarnings('ignore')
+import os,h5py,urllib,pandas as pd,numpy as np
+from sklearn.ensemble import RandomForestClassifier as sRFC
+from sklearn.metrics import accuracy_score,hamming_loss
+from sklearn.metrics import classification_report
+import torch,tensorflow as tf,pylab as pl
+import tensorflow.keras.layers as tkl
+import tensorflow.keras.callbacks as tkc
+from torch.utils.data import DataLoader as tdl
+from torch.utils.data import Dataset as tds
+from torchvision import transforms,utils,models
+import torch.nn.functional as tnnf,torch.nn as tnn
+dev=torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+from IPython.core.magic import register_line_magic
+from IPython.display import HTML
+HTML('<style>.sagecell_input {text-shadow:4px 4px 4px #aaa;}</style>')
+</script></div><br/>      
+    <h2>✒️ &nbsp; Data Loading</h2> 
+<div class='linked'><script type='text/x-sage'>
+file_path='https://raw.githubusercontent.com/OlgaBelitskaya/data_kitchen/main/'
+file_name='TomatoCultivars160.h5'; img_size=int(64)
+def get_file(file_path,file_name):
+    input_file=urllib.request.urlopen(file_path+file_name)
+    output_file=open(file_name,'wb')
+    output_file.write(input_file.read())
+    output_file.close(); input_file.close()
+get_file(file_path,file_name)
+with h5py.File(file_name,'r') as f:
+    keys=list(f.keys())
+    pretty_print(html('<p>'+10*'&nbsp;'+'file keys: '+', '.join(keys)+'</p>'))
+    images=np.array(f[keys[0]])
+    images=tf.image.resize(images,[img_size,img_size]).numpy()
+    labels=np.array(f[keys[1]])
+    names=[el.decode('utf-8')for el in f[keys[2]]]
+    f.close()
+@interact(layout=dict(top=[['get_img_size']]))
+def _get_data_resize(get_img_size=slider([64,62,..,48])):
+    global img_size,images
+    img_size=int(get_img_size)
+    pretty_print(html('<p>image size: %d<'%img_size+'/p>'))
+    images=tf.image.resize(images,[img_size,img_size]).numpy()
+</script></div><br/>
+    <h2>✒️ &nbsp; Data Processing</h2>
+<div class='linked'><script type='text/x-sage'>      
+N=labels.shape[0]; n=int(.1*N); shuffle_ids=np.arange(N)
+num_classes=len(names) 
+np.random.RandomState(12).shuffle(shuffle_ids)
+images=images[shuffle_ids]; labels=labels[shuffle_ids]
+x_test,x_valid,x_train=images[:n],images[n:2*n],images[2*n:]
+y_test,y_valid,y_train=labels[:n],labels[n:2*n],labels[2*n:]
+df=pd.DataFrame(
+    [[x_train.shape,x_valid.shape,x_test.shape],
+     [x_train.dtype,x_valid.dtype,x_test.dtype],
+     [y_train.shape,y_valid.shape,y_test.shape],
+     [y_train.dtype,y_valid.dtype,y_test.dtype]],
+    columns=['train','valid','test'],
+    index=['image shape','image type','label shape','label type'])
+def display_imgs(images,labels,names,n=12):
+    fig=pl.figure(figsize=(10,3))
+    for i in range(0,n):
+        ax=fig.add_subplot(2,n//2,i+1,xticks=[],yticks=[])
+        ax.set_title(
+            names[labels[i]],color='slategray',
+            fontdict={'fontsize':'small'})
+        ax.imshow((images[i]))
+    pl.tight_layout(); pl.show()
+display_imgs(images,labels,names); display(df)
+</script></div><br/>
+<div class='linked'><script type='text/x-sage'>      
+class TData(tds):
+    def __init__(self,x,y):   
+        self.x=torch.tensor(x,dtype=torch.float32)
+        self.y=torch.tensor(y,dtype=torch.int32)
+    def __getitem__(self,index):
+        img,lbl=self.x[index],self.y[index]
+        return img,lbl
+    def __len__(self):
+        return self.y.shape[0]
+batch_size2=int(8)
+n_train=batch_size2*(x_train.shape[0]//batch_size2)
+x_train2=np.transpose(x_train,(0,3,1,2))[:n_train]
+print(x_train2.mean(),x_train2.std())
+n_valid=batch_size2*(x_valid.shape[0]//batch_size2)
+x_valid2=np.transpose(x_valid,(0,3,1,2))[:n_valid]
+n_test=batch_size2*(x_test.shape[0]//batch_size2)
+x_test2=np.transpose(x_test,(0,3,1,2))[:n_test]
+random_seed=23
+train2=TData(x_train2,y_train[:n_train])
+valid2=TData(x_valid2,y_valid[:n_valid])
+test2=TData(x_test2,y_test[:n_test])
+dataloaders={'train':tdl(dataset=train2,shuffle=True,batch_size=batch_size2), 
+             'valid':tdl(dataset=valid2,shuffle=True,batch_size=batch_size2),
+             'test':tdl(dataset=test2,shuffle=True,batch_size=batch_size2)}
+del train2,valid2,test2
+@register_line_magic
+def display_data_imgs(data):
+    global names
+    for images,labels in dataloaders[data]:  
+        print('image dimensions: %s'%str(images.shape))
+        print('label dimensions: %s'%str(labels.shape))
+        images=[np.transpose(images[i],(1,2,0)) for i in range(len(images))]
+        display_imgs(images,labels,names,int(8))
+        break
+%display_data_imgs valid
+</script></div><br/>
+    <h2>✒️ &nbsp; Sklearn</h2>
+<div class='linked'><script type='text/x-sage'>      
+def classifier_fit_score(classifier,x_train,x_test,y_train,y_test):
+    classifier.fit(x_train,y_train)     
+    y_clf_train=classifier.predict(x_train)
+    y_clf_test=classifier.predict(x_test)        
+    acc_clf_train=round(accuracy_score(y_train,y_clf_train),int(4))
+    acc_clf_test=round(accuracy_score(y_test,y_clf_test),int(4))
+    loss_clf_train=round(hamming_loss(y_train,y_clf_train),int(4))
+    loss_clf_test=round(hamming_loss(y_test,y_clf_test),int(4))  
+    return [y_clf_train,y_clf_test,acc_clf_train,acc_clf_test,
+            loss_clf_train,loss_clf_test]
+[y_srfc_train,y_srfc_test,acc_srfc_train,
+ acc_srfc_test,loss_srfc_train,loss_srfc_test]=\
+classifier_fit_score(
+    sRFC(),x_train.reshape(-int(1),int(3)*img_size**2),
+    x_test.reshape(-int(1),int(3)*img_size**2),y_train,y_test)
+print(classification_report(y_test,y_srfc_test))
+</script></div><br/>
+<div class='linked'><script type='text/x-sage'>      
+def plot_predict(y_predict,label_predict,t=30,fig_size=8):
+    pl.figure(figsize=(fig_size,fig_size//4)); x=range(t)
+    pl.scatter(x,y_test[:t],marker='*',s=100,
+               color='slategray',label='Real data')
+    pl.scatter(x,y_predict[:t],marker='v',s=50,
+               color='#348ABD',label=label_predict)
+    pl.xlabel('Observations'); pl.ylabel('Targets') 
+    pl.title('Classifiers. Test Results',color='slategray',
+             fontdict={'fontsize':'large'})
+    pl.legend(loc=2,fontsize=10)
+    pl.tight_layout; pl.show()
+plot_predict(y_srfc_test,'Random Forest')
+</script></div><br/>
+    <h2>✒️ &nbsp; Keras</h2>
+<div class='linked'><script type='text/x-sage'>      
+def kmodel(leaky_alpha,num_classes,img_size):
+    model=tf.keras.Sequential()
+    model.add(tkl.Conv2D(int(32),(int(5),int(5)),padding='same', 
+                         input_shape=(img_size,img_size,int(3))))
+    model.add(tkl.LeakyReLU(alpha=leaky_alpha))    
+    model.add(tkl.MaxPooling2D(pool_size=(int(2),int(2))))
+    model.add(tkl.Dropout(float(.25)))
+    model.add(tkl.Conv2D(int(96),(int(5),int(5))))
+    model.add(tkl.LeakyReLU(alpha=leaky_alpha))    
+    model.add(tkl.MaxPooling2D(pool_size=(int(2),int(2))))
+    model.add(tkl.Dropout(float(.25)))   
+    model.add(tkl.GlobalMaxPooling2D())     
+    model.add(tkl.Dense(int(512)))
+    model.add(tkl.LeakyReLU(alpha=leaky_alpha))
+    model.add(tkl.Dropout(float(.5)))     
+    model.add(tkl.Dense(num_classes))
+    model.add(tkl.Activation('softmax'))   
+    model.compile(loss='sparse_categorical_crossentropy',
+                  optimizer='nadam',metrics=['accuracy'])   
+    return model
+kmodel=kmodel(float(.005),num_classes,img_size)
+</script></div><br/>
+<div class='linked'><script type='text/x-sage'>
+fw='/tmp/checkpoint'
+checkpointer=tkc.ModelCheckpoint(
+    filepath=fw,verbose=int(0),save_weights_only=True,
+    monitor='val_accuracy',mode='max',save_best_only=True)
+history=kmodel.fit(
+    x_train,y_train,epochs=int(3),batch_size=int(16),verbose=int(2),
+    validation_data=(x_valid,y_valid),callbacks=[checkpointer])
+</script></div><br/>
+<div class='linked'><script type='text/x-sage'>      
+kmodel.load_weights(fw)
+print(kmodel.evaluate(x_test,y_test,verbose=int(0)))
+y_cnn_test=np.argmax(kmodel.predict(x_test),axis=-1)
+os.remove(fw)
+plot_predict(y_cnn_test,'CNN Keras')
+</script></div><br/>
+    <h2>✒️ &nbsp; PyTorch</h2>
+<div class='linked'><script type='text/x-sage'>
+tmodel=models.vgg16(pretrained=True,progress=False)    
+for param in tmodel.parameters(): param.requires_grad=False
+tmodel.classifier[3].requires_grad=True
+def model_acc(model,data_loader):
+    correct_preds,num_examples=int(0),int(0)
+    for features,targets in data_loader:
+        features=features.to(dev)
+        targets=targets.to(dev).long()
+        logits=model(features)
+        _,pred_labels=torch.max(logits,int(1))
+        num_examples+=targets.size(int(0))
+        correct_preds+=(pred_labels==targets).sum()        
+    return correct_preds.float()/num_examples*int(100)
+def epoch_loss(model,data_loader):
+    model.eval()
+    curr_loss,num_examples=float(0.),int(0)
+    with torch.no_grad():
+        for features,targets in data_loader:
+            features=features.to(dev)
+            targets=targets.to(dev).long()
+            logits=model(features)
+            loss=tnnf.cross_entropy(logits,targets,reduction='sum')
+            num_examples+=targets.size(int(0))
+            curr_loss+=loss
+        return curr_loss/num_examples
+</script></div><br/>
+<div class='linked'><script type='text/x-sage'>      
+@register_line_magic
+def train_run(epochs):
+    epochs=int(epochs)
+    st1='epoch: %03d/%03d || batch: %03d/%03d || cost: %.4f'
+    for epoch in range(epochs):
+        tmodel.train()
+        for batch_ids,(features,targets) \
+        in enumerate(dataloaders['train']):        
+            features=features.to(dev)
+            targets=targets.to(dev).long()
+            logits=tmodel(features)
+            cost=tnnf.cross_entropy(logits,targets)
+            optimizer.zero_grad(); cost.backward()
+            optimizer.step()
+            if not batch_ids%int(20):
+                print(st1%(epoch+int(1),epochs,batch_ids,
+                      len(dataloaders['train']),cost))
+        tmodel.eval()
+        with torch.set_grad_enabled(False):
+            print('epoch: %03d/%03d'%(epoch+int(1),epochs))
+            print('valid acc/loss: %.2f%%/%.2f'%\
+                  (model_acc(tmodel,dataloaders['valid']),
+                  epoch_loss(tmodel,dataloaders['valid'])))
+tmodel.classifier[6]=tnn.Sequential(
+    tnn.Linear(int(4096),int(256)),tnn.ReLU(),
+    tnn.Dropout(float(.5)),tnn.Linear(int(256),num_classes))
+tmodel=tmodel.to(dev)
+optimizer=torch.optim.Adam(tmodel.parameters())
+%train_run 1
+</script></div><br/>
+<div class='linked'><script type='text/x-sage'>      
+tmodel.eval()
+with torch.set_grad_enabled(False):
+    print('test acc: %.2f%%'%model_acc(tmodel,dataloaders['test']))
+</script></div><br/>
+  </body>
+</html>

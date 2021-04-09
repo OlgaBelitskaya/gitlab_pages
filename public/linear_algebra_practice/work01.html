@@ -1,0 +1,162 @@
+<!DOCTYPE HTML>
+<html>
+  <head>
+    <meta charset='utf-8'>
+    <meta name='viewport' content='width=device-width'>
+    <title>📑 Linear Algebra Work 01</title>
+    <script src='https://sagecell.sagemath.org/static/embedded_sagecell.js'></script>
+    <script>$(function(){
+      sagecell.makeSagecell({inputLocation:'div.linked_sage',linked:true,evalButtonText:'Run Linked Sage Cells'});
+      sagecell.makeSagecell({inputLocation:'div.linked_python',linked:true,evalButtonText:'Run Linked Python Cells'});
+      sagecell.makeSagecell({inputLocation:'div.linked_r',linked:true,evalButtonText:'Run Linked R Cells'});
+      sagecell.makeSagecell({inputLocation:'div.sage_html',evalButtonText:'Run HTML'});
+      sagecell.makeSagecell({inputLocation:'div.sage',evalButtonText:'Run'});});
+    </script>
+  </head>
+  <style>
+    @import 'https://fonts.googleapis.com/css?family=Orbitron';
+    h1,h2 {color:#3636ff; font-family:'Orbitron'; text-shadow:5px 5px 5px #aaa;}
+    p,a {color:darkblue; font-size:110%; text-shadow:5px 5px 5px #aaa;}
+    .sagecell .CodeMirror-scroll {min-height:3em; max-height:68em;}
+    body {margin:5px 5px 5px 25px}
+  </style>  
+  <body>
+    <h1>&#x1F4D1; &nbsp;Линейная алгебра. Практическая работа №01</h1>
+<a href='https://olgabelitskaya.gitlab.io/index.html'>&#x1F300; &nbsp; Homepage &nbsp; &nbsp;</a>
+<a href='https://olgabelitskaya.github.io/README.html'>&#x1F300; &nbsp; GitHub Pages &nbsp; &nbsp;</a>
+<a href='https://olgabelitskaya.gitlab.io/linear_algebra_practice/work00.html'>&#x1F300; &nbsp; Previous &nbsp; &nbsp;</a>
+<a href='https://olgabelitskaya.gitlab.io/linear_algebra_practice/work02.html'>&#x1F300; &nbsp; Next &nbsp; &nbsp;</a>
+<a href='https://www.instagram.com/olga.belitskaya/'>&#x1F300; &nbsp; Instagram Posts &nbsp; &nbsp;</a>
+<a href='https://www.pinterest.ru/olga_belitskaya/code-style/'>&#x1F300; &nbsp; Pinterest Posts</a>
+    <h1>Матрицы. Часть 1</h1>
+    <h2>1. Способы инициализации</h2>
+<div class='sage_html'><script type='text/x-sage'>
+%%html
+<p style='color:slategray;'>
+$\mathscr{A=\begin{bmatrix} 
+1 & 2 & 3 \\ 4 & 5 & 6 \\ 
+7 & 8 & 9 \\ 10 & 11 & 12         
+\end{bmatrix}}$</p>
+</script></div>
+    <p>Активируйте этот код перед использованием любых ячеек Linked Sage Cells</p>
+<div class='linked_sage'><script type='text/x-sage'>
+A=random_matrix(ZZ,3,x=0,y=100) 
+B=random_matrix(ZZ,3,x=-100,y=0)
+C=matrix([[1.1,3.2,5.0,7.6],[2.2,4.1,6.5,8.1]]) 
+E=matrix.identity(3)
+M=matrix(SR,3,var('a,b,c,d,e,f,g,h,i'))
+M1=matrix(SR,3,var('a1,b1,c1,d1,e1,f1,g1,h1,i1')) 
+M2=matrix(SR,3,var('a2,b2,c2,d2,e2,f2,g2,h2,i2'))
+</script></div><br/>     
+<div class='linked_sage'><script type='text/x-sage'> 
+pretty_print(A,B)
+pretty_print(C,E)
+print(A.ncols(),A.nrows(),A.dimensions())
+print('\n'); print(html(A))
+print('\n'); print(latex(C))
+</script></div>
+    <p>Активируйте этот код перед использованием любых ячеек Linked Python Cells</p>
+<div class='linked_python'><script type='text/x-sage'>
+import numpy,sympy
+A1=numpy.matrix(numpy.random.randint(0,100,size=(5,7)))
+B1=numpy.matrix(numpy.random.randint(-100,0,size=(5,7)))
+C1=numpy.matrix([[1,3,5,7],[2,4,6,8]])
+E1=numpy.matrix(numpy.eye(3))
+A2=sympy.Matrix([[-3,-3,-6,-3],[-4,-7,8,-7]])
+B2=sympy.Matrix([[2,10,7],[-5,-6,-2],[-8,4,-8],[7,4,-6]])
+C2=sympy.Matrix([[-8,-4,5,2],[3,-5,8,-2]])
+E2=sympy.Identity(3)
+</script></div><br/>
+<div class='linked_python'><script type='text/x-sage'>
+print(A1); print(B1); print(C1); print(E1)
+print(A1.shape,B1.shape,C1.shape,E1.shape)
+</script></div><br/>
+<div class='linked_python'><script type='text/x-sage'>
+sympy.pprint(A2); sympy.pprint(B2)
+sympy.pprint(C2); sympy.pprint(E2.as_explicit())
+print(A2.shape,B2.shape,C2.shape,E2.shape)
+</script></div>
+    <p>Активируйте этот код перед использованием любых ячеек Linked R Cells</p>
+<div class='linked_r'><script type='text/x-sage'>
+%%r
+A<-matrix(rexp(25,rate=0.1),nrow=5,ncol=5)
+B<-matrix(c(1,3,5,7,2,4,6,8),nrow=2,ncol=4)
+C<-matrix(rexp(25,rate=0.2),nrow=5,ncol=5)
+D<-matrix(sample.int(100,size=3*4,replace=T),nrow=3,ncol=4)
+E<-matrix(0,5,5); diag(E)<-1; E
+</script></div><br/>
+<div class='linked_r'><script type='text/x-sage'>
+%%r
+cat(paste(c('| A ',dim(A),'| B ',dim(B),'| C ',
+          dim(C),'| D ',dim(D),'| E ',
+          dim(E),'| '),collapse=' '),'\n')
+A
+</script></div>
+    <h2>2. Операции над матрицами</h2>
+    <h3>2.1 Умножение на число</h3>
+<div class='linked_sage'><script type='text/x-sage'>
+pretty_print('2*',latex(A),' = ',latex(2*A))
+pretty_print('k*'+latex(M)+' = '+latex(var('k')*M))
+html(var('t')*M)
+</script></div><br/>
+<div class='linked_python'><script type='text/x-sage'>
+print(A1); print(-3*A1); print(20*'_=')
+sympy.pprint(A2); sympy.pprint(1.5*A2)
+</script></div><br/>
+<div class='linked_r'><script type='text/x-sage'>
+%%r
+5*A
+</script></div>
+    <h3>2.2 Сложение и вычитание матриц</h3>
+<div class='linked_sage'><script type='text/x-sage'>
+pretty_print(M1+M2); print('\n')
+pretty_print('M1+M2=M2+M1: %s'%str(M1+M2==M2+M1))
+pretty_print(M1-M2)
+</script></div><br/>
+<div class='linked_python'><script type='text/x-sage'>
+print('\nA1+B1\n')
+print(A1); print(B1); print(A1+B1)
+sympy.pprint('\n'+15*'<>')
+print('\nA2-C2\n')
+sympy.pprint(A2); sympy.pprint(C2)
+sympy.pprint(A2-C2)
+</script></div><br/>
+<div class='linked_r'><script type='text/x-sage'>
+%%r
+matrix(c(A,C,A+C,A-C),nrow=5)
+</script></div><br/>
+    <h3>2.3 Умножение матриц</h3>
+<div class='linked_sage'><script type='text/x-sage'>
+pretty_print(M1*M2)
+pretty_print('M1*M2=M2*M1: %s'%str(M1*M2==M2*M1))
+pretty_print(M2*M1) 
+</script></div><br/>
+<div class='linked_python'><script type='text/x-sage'>
+print(A1*B1.T); print(B1.T*A1)
+print(numpy.dot(A1,B1.T)==A1*B1.T)
+print('\n'+25*'<>'+'\n')
+sympy.pprint(A2*C2.T)
+A2*C2.T==C2.T*A2
+</script></div><br/>
+<div class='linked_r'><script type='text/x-sage'>
+%%r
+print(matrix(c(A%*%C==C%*%A,A%*%C==A*C,C%*%A==A*C),nrow=5,ncol=15))
+A%*%C
+</script></div><br/>
+    <h2>3. Задание</h2>
+Инициировать матрицы A (2x4) и B (4x2),<br/> 
+рассчитать их сумму A+B и произведения A∗B, B∗A,<br/> 
+используя SageMath, Numpy, SymPy или R.<br/>
+<div class='linked_sage'><script type='text/x-sage'>
+
+</script></div><br/>
+<div class='linked_python'><script type='text/x-sage'>
+import numpy,sympy,pylab
+
+</script></div><br/> 
+<div class='linked_r'><script type='text/x-sage'>
+%%r
+
+</script></div> 
+  </body>
+</html> 

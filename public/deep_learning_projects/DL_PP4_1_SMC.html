@@ -1,0 +1,294 @@
+<!DOCTYPE HTML>
+<html>
+  <head>
+    <meta charset='utf-8'>
+    <meta name='viewport' content='width=device-width'>
+    <title>🏙 DL PP4_1 SMC</title>
+    <script src='https://sagecell.sagemath.org/static/embedded_sagecell.js'></script>
+    <script>$(function(){
+      sagecell.makeSagecell(
+        {inputLocation:'div.linked',linked:true,evalButtonText:'run linked cells'}); });
+    </script>
+  </head>
+  <style>
+    @import 'https://fonts.googleapis.com/css?family=Akronim|Lobster';
+    h1,h2,th {color:#348ABD; font-family:Akronim; font-size:120%; text-shadow:4px 4px 4px #aaa;}
+    p,a {color:slategray; font-family:Lobster; font-size:120%; text-shadow:4px 4px 4px #aaa;}
+    .sagecell .CodeMirror-scroll {min-height:3em; max-height:70em;}
+    body {margin:5px 5px 5px 15px;}
+  </style>
+  <body>
+    <h1>📑 &nbsp; Deep Learning. Practice Project 4_1: Mixed Styles</h1>
+Perfect and complete explanation =>
+<a href='https://github.com/naokishibuya/deep-learning/blob/master/python/artistic_style_transfer.ipynb'>
+&#x1F300; &nbsp;  &nbsp; Artistic Style Transfer by Naoki Shibuya &nbsp; &nbsp;</a><br>   
+<a href='https://olgabelitskaya.gitlab.io/index.html'>&#x1F300; &nbsp; Homepage &nbsp; &nbsp;</a>
+<a href='https://olgabelitskaya.gitlab.io/deep_learning_projects/index.html'>
+&#x1F300; &nbsp; Project List &nbsp; &nbsp;</a>
+<a href='https://olgabelitskaya.github.io/README.html'>&#x1F300; &nbsp; GitHub Pages &nbsp; &nbsp;</a>
+<a href='https://olgabelitskaya.gitlab.io/deep_learning_projects/DL_PP3_0_SMC.html'>
+&#x1F300; &nbsp; Previous &nbsp; &nbsp;</a>
+<a href='https://olgabelitskaya.gitlab.io/deep_learning_projects/DL_PP4_0_SMC.html'>
+&#x1F300; &nbsp; Main &nbsp; &nbsp;</a>
+<a href='https://olgabelitskaya.gitlab.io/deep_learning_projects/DL_PP5_0_SMC.html'>
+&#x1F300; &nbsp; Next &nbsp; &nbsp;</a><br/>
+<a href='https://www.instagram.com/olga.belitskaya/'>&#x1F300; &nbsp; Instagram Posts &nbsp; &nbsp;</a>
+<a href='https://www.pinterest.ru/olga_belitskaya/code-style/'>&#x1F300; &nbsp; Pinterest Posts</a><br/>
+    <h2>✒️ &nbsp; Libraries</h2>  
+<div class='linked'><script type='text/x-sage'>
+!python3 -m pip install --upgrade tensorflow_hub \
+--user --quiet --no-warn-script-location
+path='/home/sc_work/.sage/local/lib/python3.8/site-packages'
+import sys,warnings; sys.path.append(path); warnings.filterwarnings('ignore')
+import os,urllib,PIL.Image,time,imageio,tensorflow_hub as hub
+import numpy as np,tensorflow as tf,pylab as pl
+from IPython.display import display,HTML,clear_output
+from IPython.core.magic import register_line_magic
+file_path='https://raw.githubusercontent.com/OlgaBelitskaya/data/main/'
+tfhub_path='https://tfhub.dev/google/magenta/arbitrary-image-stylization-v1-256/2'
+os.environ['TFHUB_MODEL_LOAD_FORMAT']='COMPRESSED'
+from IPython.display import HTML
+HTML('<style>.sagecell_input {text-shadow:4px 4px 4px #aaa;}</style>')
+</script></div><br/>
+    <h2>✒️ &nbsp; Displaying Images</h2> 
+<div class='linked'><script type='text/x-sage'>
+def get_file(file,folder,file_path=file_path):
+    input_file=urllib.request.urlopen(file_path+folder+file)
+    output_file=open(file,'wb'); 
+    output_file.write(input_file.read())
+    output_file.close(); input_file.close()
+def load_img(path_to_img,max_dim=int(224)):
+    img=tf.io.read_file(path_to_img)
+    img=tf.image.decode_image(img,channels=3)
+    img=tf.image.convert_image_dtype(img,tf.float32)
+    shape=tf.cast(tf.shape(img)[:-int(1)],tf.float32)
+    long_dim=max(shape)
+    scale=max_dim/max(shape)
+    new_shape=tf.cast(shape*scale,tf.int32)
+    img=tf.image.resize(img,new_shape)
+    return img[tf.newaxis,:]
+def tensor2img(tensor):
+    tensor=tensor*int(255)
+    tensor=np.array(tensor,dtype=np.uint8)
+    if np.ndim(tensor)>3:
+        assert tensor.shape[0]==1; tensor=tensor[0]
+    return PIL.Image.fromarray(tensor)
+def display_images(original_img,style_img,
+                   file_path=file_path):    
+    fig=pl.figure(figsize=(10,4))
+    ax=fig.add_subplot(121)
+    str1='Shape of the original image: %s'
+    pl.title(str1%str(original_img.shape),fontsize=int(8))
+    ax.imshow(np.squeeze(original_img))
+    ax=fig.add_subplot(122)
+    str2='Shape of the style image: %s'
+    pl.title(str2%str(style_img.shape),fontsize=int(8))
+    ax.imshow(np.squeeze(style_img))
+    pl.tight_layout(); pl.show()
+</script></div><br/>
+<div class='linked'><script type='text/x-sage'>
+files=['02_001.png','01_00_001.png']
+folders=['flowers/','paintings/']
+for i in range(2): get_file(files[i],folders[i])
+original_img=load_img(files[0])
+style_img=load_img(files[1])
+display_images(original_img,style_img)
+</script></div><br/>
+<div class='linked'><script type='text/x-sage'>
+hub_model=hub.load(tfhub_path)
+stylized_img=hub_model(
+    tf.constant(original_img),tf.constant(style_img))[int(0)]
+tensor2img(stylized_img)
+</script></div><br/>
+    <h2>✒️ &nbsp; Keras Applications</h2> 
+<div class='linked'><script type='text/x-sage'>
+def vgg_layers(layer_names):
+    vgg19=tf.keras.applications.VGG19(
+        include_top=False,weights='imagenet')
+    vgg19.trainable=False
+    outputs=[vgg19.get_layer(name).output 
+             for name in layer_names]
+    model=tf.keras.Model([vgg19.input],outputs)
+    return model
+original_layers=['block5_conv2'] 
+style_layers=['block1_conv1','block2_conv1',
+              'block3_conv1','block4_conv1','block5_conv1']
+num_original_layers=len(original_layers)
+num_style_layers=len(style_layers)
+</script></div><br/>
+<div class='linked'><script type='text/x-sage'>
+def item_stats(item):
+    for name,output in item:
+        print(name)
+        print('  shape: ',output.numpy().shape)
+        print('  min: ',output.numpy().min())
+        print('  max: ',output.numpy().max())
+        print('  mean: ',output.numpy().mean())
+        print(30*'-')
+style_extractor=vgg_layers(style_layers)
+style_outputs=style_extractor(style_img*int(255))
+item_stats(zip(style_layers,style_outputs))
+</script></div><br/>
+<div class='linked'><script type='text/x-sage'>
+def gram_matrix(input_tensor):
+    result=tf.linalg.einsum(
+        'bijc,bijd->bcd',input_tensor,input_tensor)
+    input_shape=tf.shape(input_tensor)
+    num_locations=tf.cast(
+        input_shape[int(1)]*input_shape[int(2)],tf.float32)
+    return result/(num_locations)
+class StyleOriginalModel(tf.keras.models.Model):
+    def __init__(self,style_layers,original_layers):
+        super(StyleOriginalModel,self).__init__()
+        self.vgg=vgg_layers(style_layers+original_layers)
+        self.style_layers=style_layers
+        self.original_layers=original_layers
+        self.num_style_layers=len(style_layers)
+        self.vgg.trainable=False
+    def call(self,inputs):
+        inputs=inputs*float(255.)
+        preprocessed_input=\
+        tf.keras.applications.vgg19.preprocess_input(inputs)
+        outputs=self.vgg(preprocessed_input)
+        style_outputs,original_outputs=\
+        (outputs[:self.num_style_layers],
+        outputs[self.num_style_layers:])
+        style_outputs=[gram_matrix(style_output)
+                       for style_output in style_outputs]
+        original_dict={original_name:value for original_name,value 
+                       in zip(self.original_layers,original_outputs)}
+        style_dict={style_name:value for style_name,value
+                    in zip(self.style_layers,style_outputs)}
+        return {'original':original_dict,'style':style_dict}
+</script></div><br/>
+<div class='linked'><script type='text/x-sage'>
+extractor=StyleOriginalModel(style_layers,original_layers)
+results=extractor(tf.constant(original_img))
+print('Styles:')
+item_stats(sorted(results['style'].items()))
+print('Originals:')
+item_stats(sorted(results['original'].items()))
+</script></div><br/>
+    <h2>✒️ &nbsp; Gradient Descent Steps</h2>
+<div class='linked'><script type='text/x-sage'>
+def clip01(img):
+    return tf.clip_by_value(
+        img,clip_value_min=float(0.),clip_value_max=float(1.))
+def style_original_loss(outputs,style_weight,original_weight):
+    style_outputs=outputs['style']
+    original_outputs=outputs['original']
+    style_loss=tf.add_n(
+        [tf.reduce_mean((style_outputs[name]-style_targets[name])**2) 
+         for name in style_outputs.keys()])
+    style_loss*=style_weight/num_style_layers
+    original_loss=tf.add_n(
+        [tf.reduce_mean((original_outputs[name]-original_targets[name])**2) 
+         for name in original_outputs.keys()])
+    original_loss*=original_weight/num_original_layers
+    loss=style_loss+original_loss
+    return loss
+@tf.function()
+def train_step(img,style_weight,original_weight,optimizer):
+    with tf.GradientTape() as tape:
+        outputs=extractor(img)
+        loss=style_original_loss(
+            outputs,style_weight,original_weight)
+    gradient=tape.gradient(loss,img)
+    optimizer.apply_gradients([(gradient,img)])
+    img.assign(clip01(img))
+</script></div><br/>
+<div class='linked'><script type='text/x-sage'>
+style_targets=extractor(style_img)['style']
+original_targets=extractor(original_img)['original']
+optimizer=tf.optimizers.Adam(
+    learning_rate=float(.02),beta_1=float(.99),epsilon=float(.1))
+style_weight=float(.01); original_weight=float(10**4)
+img=tf.Variable(original_img)
+for i in range(3):
+    train_step(img,style_weight,original_weight,optimizer)
+tensor2img(img)
+</script></div><br/>
+    <h2>✒️ &nbsp; Total Variation Loss</h2>
+<div class='linked'><script type='text/x-sage'>
+def highpass_xy(img):
+    x_var=img[:,:,int(1):,:]-img[:,:,:-int(1),:]
+    y_var=img[:,int(1):,:,:]-img[:,:-int(1),:,:]
+    return x_var,y_var
+x_deltas,y_deltas=highpass_xy(original_img)
+pl.figure(figsize=(10,6))
+pl.subplot(2,4,1)
+pl.imshow(tf.squeeze(clip01(int(2)*y_deltas+float(.5))))
+pl.title('Horizontal Deltas | Original',fontsize=10)
+pl.subplot(2,4,2)
+pl.imshow(tf.squeeze(clip01(int(2)*x_deltas+float(.5))))
+pl.title('Vertical Deltas | Original',fontsize=10)
+x_deltas,y_deltas=highpass_xy(img)
+pl.subplot(2,4,3)
+pl.imshow(tf.squeeze(clip01(int(2)*y_deltas+float(.5))))
+pl.title('Horizontal Deltas | Styled',fontsize=10)
+pl.subplot(2,4,4)
+pl.imshow(tf.squeeze(clip01(int(2)*x_deltas+float(.5))))
+pl.title('Vertical Deltas | Styled',fontsize=10)
+sobel=tf.image.sobel_edges(original_img)
+pl.subplot(2,4,5)
+pl.imshow(tf.squeeze(clip01(sobel[...,int(0)]/int(4)+float(.5))))
+pl.title('Horizontal Sobel-edges',fontsize=10)
+pl.subplot(2,4,6)
+pl.imshow(tf.squeeze(clip01(sobel[...,int(1)]/int(4)+float(.5))))
+pl.title('Vertical Sobel-edges',fontsize=10)
+pl.tight_layout(); pl.show()
+</script></div><br/>
+<div class='linked'><script type='text/x-sage'>
+def total_variation_loss(img):
+    x_deltas,y_deltas=highpass_xy(img)
+    return tf.reduce_sum(tf.abs(x_deltas))+\
+           tf.reduce_sum(tf.abs(y_deltas))
+total_variation_loss(img).numpy(),\
+tf.image.total_variation(img).numpy()
+</script></div><br/>
+   <h2>✒️ &nbsp; Train Steps with Total Variation Loss</h2>
+<div class='linked'><script type='text/x-sage'>
+total_variation_weight=int(100)
+img=tf.Variable(original_img)
+@tf.function()
+def train_step(img,style_weight,original_weight,
+               total_variation_weight,optimizer):
+    with tf.GradientTape() as tape:
+        outputs=extractor(img)
+        loss=style_original_loss(
+            outputs,style_weight,original_weight)
+        loss+=total_variation_weight*tf.image.total_variation(img)
+    gradient=tape.gradient(loss,img)
+    optimizer.apply_gradients([(gradient,img)])
+    img.assign(clip01(img))
+</script></div><br/>
+<div class='linked'><script type='text/x-sage'>
+start=time.time()
+epochs=int(3); steps_per_epoch=int(10)
+step=0; imgs=[]
+for n in range(epochs):
+    for m in range(steps_per_epoch):
+        step+=1
+        train_step(img,style_weight,original_weight,
+                   total_variation_weight,optimizer)
+        print('-',end='')
+        imgs.append(np.squeeze(img.numpy()))
+    clear_output(wait=True)
+    display(tensor2img(img))
+    print('Train step: {}'.format(step))
+imgs=np.array(imgs); end=time.time()
+print('Total time: {:.1f}'.format(end-start))
+</script></div><br/>
+<div class='linked'><script type='text/x-sage'>
+file_name='pic.gif'
+imgs=imgs*int(255)
+imgs=np.array(imgs,dtype=np.uint8)
+imageio.mimsave(file_name,imgs)
+file_path='https://sagecell.sagemath.org/kernel/'
+file_path+=os.getcwd()[14:]+'/files/'
+s1='<div id="imgs"><img src="'
+s2='" height="300" width="200"></img></div>'
+HTML(s1+file_path+file_name+s2)
+</script></div><br/>
+  </body>
+</html>

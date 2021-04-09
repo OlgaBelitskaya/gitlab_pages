@@ -1,0 +1,493 @@
+<!DOCTYPE HTML>
+<html>
+  <head>
+    <meta charset='utf-8'>
+    <meta name='viewport' content='width=device-width'>
+    <title>📑 Instagram Posts 16</title>
+    <script src='https://sagecell.sagemath.org/static/embedded_sagecell.js'></script>
+    <script>$(function(){
+      sagecell.makeSagecell({inputLocation:'div.linked',linked:true,evalButtonText:'Run Linked Cells'});
+      sagecell.makeSagecell({inputLocation:'div.sage_html',evalButtonText:'Run HTML'});  
+      sagecell.makeSagecell({inputLocation:'div.sage_js',evalButtonText:'Run JavaScript'});
+      sagecell.makeSagecell({inputLocation:'div.sage_r',evalButtonText:'Run R'});  
+      sagecell.makeSagecell({inputLocation:'div.sage',evalButtonText:'Run SageMath'}); });
+    </script>
+    <script src='https://unpkg.com/@codersrank/summary@0.9.10/codersrank-summary.min.js'></script>
+    <script src='https://d3js.org/d3.v6.min.js'></script>
+  </head>
+  <style>
+    @import 'https://fonts.googleapis.com/css?family=Orbitron';
+    h1,h2 {color:#3636ff; font-family:Orbitron; text-shadow:4px 4px 4px #aaa;}
+    p,a {color:darkblue; font-size:110%; text-shadow:4px 4px 4px #aaa;}
+    .sagecell .CodeMirror-scroll {min-height:3em; max-height:70em;}
+    body {margin:5px 5px 5px 15px;}
+  </style>  
+  <body>
+<codersrank-summary username='olgabelitskaya' layout='vertical'
+style='--header-bg-color:#3636ff; font-family:Orbitron;'></codersrank-summary>
+    <h1>&#x1F4D1; &nbsp;Instagram Posts. Part 16</h1>
+<a href='https://olgabelitskaya.gitlab.io/index.html'>&#x1F300; &nbsp; Homepage &nbsp; &nbsp;</a>
+<a href='https://olgabelitskaya.github.io/README.html'>&#x1F300; &nbsp; GitHub Pages &nbsp; &nbsp;</a>
+<a href='https://olgabelitskaya.gitlab.io/instagram_posts/instagram15.html'>&#x1F300; &nbsp; Previous &nbsp; &nbsp;</a>
+<a href='https://www.instagram.com/olga.belitskaya/'>&#x1F300; &nbsp; Instagram Posts &nbsp; &nbsp;</a>
+<a href='https://www.pinterest.ru/olga_belitskaya/code-style/'>&#x1F300; &nbsp; Pinterest Posts</a>
+    <h1>Super Resolution</h1>
+SageMath & Python<br/>
+<div class='sage'><script type='text/x-sage'>
+!python3 -m pip install tensorflow_hub --user --quiet --no-warn-script-location
+path='/home/sc_work/.sage/local/lib/python3.8/site-packages'
+import sys,os,urllib,warnings
+sys.path.append(path); warnings.filterwarnings('ignore')
+import numpy as np,tensorflow as tf,tensorflow_hub as hub
+super_hub_path='https://tfhub.dev/captain-pool/esrgan-tf2/1'
+os.environ['TFHUB_MODEL_LOAD_FORMAT']='COMPRESSED'
+file_path='https://olgabelitskaya.gitlab.io/images/'
+file_name='03_010.png'; lr_size=int(32)
+input_file=urllib.request.urlopen(file_path+file_name)
+output_file=open(file_name,'wb')
+output_file.write(input_file.read())
+output_file.close(); input_file.close()
+super_model=hub.load(super_hub_path)
+func=super_model.signatures[tf.saved_model.DEFAULT_SERVING_SIGNATURE_DEF_KEY]
+func.inputs[0].set_shape([1,lr_size,lr_size,3])
+converter=tf.lite.TFLiteConverter.from_concrete_functions([func])
+converter.optimizations=[tf.lite.Optimize.DEFAULT]
+tflite_super_model=converter.convert()
+with tf.io.gfile.GFile('ESRGAN.tflite','wb') as f: 
+    f.write(tflite_super_model)
+esrgan_model_path='./ESRGAN.tflite'
+img=tf.io.read_file(file_name)
+img=tf.image.decode_image(img,channels=int(3))
+img=tf.image.convert_image_dtype(img,tf.float32)
+shape=tf.cast(tf.shape(img)[:-int(1)],tf.float32)
+scale=lr_size/max(shape)
+new_shape=tf.cast(shape*scale,tf.int32)
+img=tf.image.resize(img,new_shape)
+lr=tf.expand_dims(img.numpy()[:,:,:int(3)],axis=int(0))
+lr=tf.cast(lr*int(255),tf.float32)
+interpreter=tf.lite.Interpreter(model_path=esrgan_model_path)
+interpreter.allocate_tensors()
+input_details=interpreter.get_input_details()
+output_details=interpreter.get_output_details()
+interpreter.set_tensor(input_details[int(0)]['index'],lr)
+interpreter.invoke()
+output_data=interpreter.get_tensor(output_details[0]['index'])
+sr=tf.squeeze(output_data,axis=int(0))
+sr=tf.clip_by_value(sr,int(0),int(255))
+sr=tf.cast(tf.round(sr),tf.uint8)
+lr=tf.cast(tf.squeeze(lr,axis=int(0)),tf.uint8)
+pretty_print('lower resolution 32x32 ===> higher resolution 128x128')
+for img in [lr/int(255),sr/int(255)]: 
+    matrix_plot(img,frame=True,figsize=(3,3)).show()
+</script></div><br/>
+    <h1>Fun Pandas Styling</h1>
+SageMath & Python<br/>
+<div class='sage'><script type='text/x-sage'>
+import numpy as np,pandas as pd,seaborn as sn
+def df_style():
+    return [dict(selector='th',
+                 props=[('font-size','16pt'),('text-align','center')]),
+            dict(selector='td',
+                 props=[('min-width','30px'),('text-align','center')]),
+            dict(selector='th:hover',
+                 props=[('text-shadow','2px 2px 2px #777'),
+                        ('color','transparent')]),
+            dict(selector='tr:hover td:hover',
+                 props=[('max-width','100px'),('font-size','12pt'),
+                        ('text-shadow','2px 2px 2px #777')])]
+np.random.seed(25)
+@interact
+def _(palette_start=slider(0,255,1,0),palette_end=slider(0,255,1,255)):
+    cmap=sn.diverging_palette(palette_start,palette_end,as_cmap=True)
+    df=pd.DataFrame(np.random.randn(10,10)).cumsum()
+    display(df.style.background_gradient(cmap,axis=1)\
+              .set_properties(**{'font-size':'1pt'}).set_precision(3)\
+              .set_caption('$\\mathbb {hover \\; styling}$')\
+              .set_table_styles(df_style()))
+</script></div><br/>
+    <h1>Artificial Images</h1>
+SageMath & Python<br/>
+<div class='sage'><script type='text/x-sage'>
+import warnings; warnings.filterwarnings('ignore')
+import numpy as np; from skimage import transform,io
+def randcoef():
+    a=(.5+.1**6*randint(1,999999))*choice([-1,1])
+    b=randint(3,10)
+    c=.1**3*randint(1,99)*choice([-1,1])
+    return a,b,c
+def randcoord(a,b,c):
+    t=[0,n(1/(720*b)),..,n(12*pi)]
+    f=[(sin(t0/6)+a*sin(b*t0)*cos(t0)-c*sin(16*b*t0),
+        cos(t0/6)+a*sin(b*t0)*sin(t0)-c*cos(16*b*t0)) for t0 in t]
+    return f
+def create_png(n):
+    for i in range(n):
+        a,b,c=randcoef(); f=randcoord(a,b,c)
+        p=list_plot(f,size=1,axes=False,figsize=9,aspect_ratio=1)
+        p.save('pic%d'%i+'.png')
+create_png(2)
+def load_img(file_name,img_size):
+    img=io.imread(file_name)
+    img=transform.resize(img,[img_size,img_size])
+    return img[:,:,:3]/255
+def interpolate_hypersphere(v1,v2,steps):
+    v1norm=np.linalg.norm(v1); v2norm=np.linalg.norm(v2)
+    v2normalized=v2*(v1norm/v2norm)
+    vectors=[]
+    for step in range(steps):
+        interpolated=v1+(v2normalized-v1)*step/(steps-int(1))
+        interpolated_norm=np.linalg.norm(interpolated)
+        interpolated_normalized=\
+        interpolated*(v1norm/interpolated_norm)
+        vectors.append(interpolated_normalized)
+    return np.array(vectors)*255
+file_name1,file_name2='pic0.png','pic1.png'
+img_size=900; steps=60
+img1=load_img(file_name1,img_size)
+img2=load_img(file_name2,img_size)
+imgs=np.vstack([interpolate_hypersphere(img1,img2,steps),
+                interpolate_hypersphere(img2,img1,steps)])
+animate([matrix_plot(
+    imgs[i],transparent=True,frame=False,
+    figsize=(5,5)) for i in range(2*steps)])
+</script></div><br/>
+    <h1>Artificial Data</h1>
+Linked Cells & Python<br/>
+<div class='linked'><script type='text/x-sage'>
+import warnings; warnings.filterwarnings('ignore')
+import imageio,numpy as np,pandas as pd
+import os,h5py,seaborn as sn,pylab as pl
+from skimage.transform import resize
+from IPython.display import HTML
+def randintcoord(img_size_out,img_size=1024):
+    a=(.5+.1**6*np.random.randint(1,999999))*\
+      np.random.choice([-1,1],1)[0]
+    b=np.random.randint(3,10)
+    c=.1**3*np.random.randint(1,99)*\
+      np.random.choice([-1,1],1)[0]
+    t=np.arange(0,12*np.pi,1/(2880*b))
+    fx=np.sin(t/6)+a*np.sin(b*t)*np.cos(t)-\
+       c*np.sin(16*b*t)
+    fy=np.cos(t/6)+a*np.sin(b*t)*np.sin(t)-\
+       c*np.cos(16*b*t)
+    fx=.951*(fx-1.051*fx.min())/(fx.max()-fx.min())
+    fy=.951*(fy-1.051*fy.min())/(fy.max()-fy.min())
+    fx=np.array(np.clip(fx*img_size,0,img_size-1),dtype='int32')
+    fy=np.array(np.clip(fy*img_size,0,img_size-1),dtype='int32')
+    f=np.array([[fx[i],fy[i]] for i in range(len(t))])
+    img=np.ones((img_size,img_size,3))
+    randcol=.9-.8*np.random.random(3)
+    for [x,y] in f: img[y,x,:]=randcol
+    img=resize(img,(img_size_out,img_size_out))
+    return img,np.around(a,6),b,np.around(c,3),randcol
+</script></div><br/>
+<div class='linked'><script type='text/x-sage'>
+img_size=256; num_images=10
+images=np.zeros((num_images,img_size,img_size,3),dtype=np.float32)
+labels=np.zeros((num_images,),dtype=np.int32)
+targets=np.zeros((num_images,2),dtype=np.float32)
+colors=np.zeros((num_images,3),dtype=np.float32)
+for i in range(num_images):
+    print('=>',end='',flush=True)
+    img,a,b,c,col=randintcoord(img_size)
+    images[i,:,:,:]=img
+    labels[i],targets[i,0],targets[i,1]=b-3,a,c
+    colors[i,:]=col
+h5f='ArtificialImages'+str(img_size)+'.h5'
+with h5py.File(h5f,'w') as f:
+    f.create_dataset('images',data=images,compression='gzip')
+    f.create_dataset('labels',data=labels,compression='gzip')
+    f.create_dataset('targets',data=targets,compression='gzip')
+    f.create_dataset('colors',data=colors,compression='gzip')
+    f.close()
+print('\nfile size: %s'%list(os.stat(h5f))[6])
+</script></div><br/>
+<div class='linked'><script type='text/x-sage'>
+with h5py.File(h5f,'r') as f:
+    keys=list(f.keys()); print(keys)
+    images=np.array(f[keys[1]]); labels=np.array(f[keys[2]])
+    targets=np.array(f[keys[3]]); colors=np.array(f[keys[0]])
+    f.close()
+fig=pl.figure(figsize=(6,2))
+for i in range(2):
+    randi=np.random.randint(1,num_images,2)
+    ax=fig.add_subplot(1,2,i+1)
+    pl.imshow(images[randi[i]]); pl.axis('off')
+    ti=str([labels[randi[i]],list(targets[randi[i]])])
+    pl.title(ti,color=colors[randi[i]])
+pl.tight_layout(); pl.show()
+</script></div><br/>
+<div class='linked'><script type='text/x-sage'>
+def interpolate_hypersphere(v1,v2,steps):
+    v1norm=np.linalg.norm(v1); v2norm=np.linalg.norm(v2)
+    v2normalized=v2*(v1norm/v2norm)
+    vectors=[]
+    for step in range(steps):
+        interpolated=v1+(v2normalized-v1)*step/(steps-int(1))
+        interpolated_norm=np.linalg.norm(interpolated)
+        interpolated_normalized=interpolated*(v1norm/interpolated_norm)
+        vectors.append(interpolated_normalized)
+    return np.array(vectors)
+steps=60; file_name='pic.gif'
+imgs=np.vstack(
+    [interpolate_hypersphere(images[1],images[0],steps),
+     interpolate_hypersphere(images[0],images[1],steps)])
+imageio.mimsave('pic.gif',imgs)
+file_path='https://sagecell.sagemath.org/kernel/'
+file_path+=os.getcwd()[14:]+'/files/'
+s1='<div id="imgs"><img src="'
+s2='" height="400" width="400"></img></div>'
+HTML(s1+file_path+file_name+s2)
+</script></div><br/>
+    <h1>Styling in Printing</h1>
+Python <br/>
+<div class='sage'><script type='text/x-sage'>
+from IPython.display import display,HTML
+from IPython.core.magic import register_line_magic
+import random
+def idhtml(string,fontcolor='darkslategray',
+           font='Ewert',fontsize=24):
+    randi=random.randint(1,999999999)
+    style_str="""<style>@import """+\
+    """'https://fonts.googleapis.com/css?family="""+font+\
+    """'; #colored_font"""+str(randi)+\
+    """ {color:"""+fontcolor+\
+    """; font-family:"""+font+\
+    """; font-size:"""+str(fontsize)+"""px;}</style>"""
+    h_str="""<h1 id='colored_font"""+str(randi)+\
+    """'>"""+string+"""</h1>"""
+    script_str="""<script>"""+\
+    """var idc=setInterval(function() {"""+\
+    """var iddoc=document.getElementById("""+\
+    """'colored_font"""+str(randi)+"""'); """+\
+    """var now=new Date().getTime(); """+\
+    """var sec=Math.floor((now%(1000*60))/1000); """+\
+    """var col='rgb('+(5+Math.abs(245-8*sec))+',0,'"""+\
+    """+(250-Math.abs(245-8*sec))+')'; """+\
+    """iddoc.style.color=col;},1000);</"""+"""script>"""
+    display(HTML(style_str+h_str+script_str))
+idhtml('Styling in Printing')
+@register_line_magic
+def d3idhtml(string):
+    font_size=24; font_family='Ewert'
+    width=650; height=font_size*2.5
+    randi=str(random.uniform(0,9999999))
+    html_str="""
+    <head><script src='https://d3js.org/d3.v6.min.js'></"""+"""script>
+    </head><style>@import 'https://fonts.googleapis.com/css?family="""+\
+    font_family+"""&effect=3d'; #colorized1 {font-family:"""+font_family+\
+    """; color:white; font-size:"""+str(font_size)+\
+    """px;}</style><h1 id='colorized1' class='font-effect-3d'>"""+string+\
+    """</h1><script>
+    var tc=setInterval(function(){
+        var now=new Date().getTime();
+        var iddoc1=document.getElementById('colorized1');
+        iddoc1.style.color=d3.interpolateSinebow(now/60000); },1)
+    </"""+"""script>"""
+    display(HTML(html_str))
+%d3idhtml Styling in Printing
+</script></div><br/>
+    <h1>Styling in Printing</h1>
+Python <br/>
+<div class='sage'><script type='text/x-sage'>
+from IPython.display import display,HTML
+import random
+def whtml(string,background_color='black',padding=2,
+          font_family='Akronim',font_size_px=int(28),
+          deg=int(120),percent=[0,33,67,100],
+          colors=['magenta','orange','cyan','purple']):
+    randi=random.randint(1,999999999)
+    html_str="""<style>@import """+\
+    """'https://fonts.googleapis.com/css?family="""+\
+    font_family+"""';</style>"""+\
+    """<div id='colorized_div' """+str(randi)+\
+    """ style='background:"""+background_color+\
+    """; padding:"""+str(padding)+"""vw;'>"""+\
+    """<div style='background:linear-gradient("""+\
+    str(deg)+"""deg, """+\
+    colors[0]+""" """+str(percent[0])+"""%,"""+\
+    colors[1]+""" """+str(percent[1])+"""%,"""+\
+    colors[2]+""" """+str(percent[2])+"""%,"""+\
+    colors[3]+""" """+str(percent[3])+"""%"""+\
+    """); font-family:"""+font_family+"""; """+\
+    """font-size:"""+str(font_size_px)+"""px; """+\
+    """-webkit-background-clip:text; color:transparent;'> """+\
+    string+"""</div></div>"""   
+    display(HTML(html_str))
+corpus=['Have you already set your goals for the New Year?', 
+        'Do you want to lose ten kilos, '+\
+        'run a marathon or speak fluent English?', 
+        'Some experts believe that you need systems, not goals.', 
+        'A system is something you do on a regular basis. ',
+        'This means focusing on what you can control '+\
+        '(your actions) rather than what you can’t.',
+        'For example, do not focus on losing ten kilos.',
+        'Focus on shopping for healthy food and '+\
+        'cooking something light every day.',
+        'Do not focus on the marathon.',
+        'Focus on the training schedule.',
+        'Invent a system to improve your English, one step at a time.',
+        'Good luck!']
+corpus_str=' '.join(corpus)
+whtml(corpus_str)
+</script></div><br/>
+      <h1>Aggregate CSV</h1>
+R <br/>
+<div class='sage_r'><script type='text/x-sage'>
+%%r
+mean_aggr_csv<-function(url,sep,column,group_by) {
+    df<-read.csv(url,header=TRUE,sep=sep)
+    len<-dim(df)[1]
+    group_list<-list(df[1:len,group_by])
+    result<-aggregate(df[column],group_list,mean)
+    colnames(result)<-c(group_by,paste0('mean ',column))
+    return(result)}
+median_aggr_csv<-function(url,sep,column,group_by) {
+    df<-read.csv(url,header=TRUE,sep=sep)
+    len<-dim(df)[1]
+    group_list<-list(df[1:len,group_by])
+    result<-aggregate(df[column],group_list,median)
+    colnames(result)<-c(group_by,paste0('median ',column))
+    return(result)}
+sum_aggr_csv<-function(url,sep,column,group_by) {
+    df<-read.csv(url,header=TRUE,sep=sep)
+    len<-dim(df)[1]
+    group_list<-list(df[1:len,group_by])
+    result<-aggregate(df[column],group_list,sum) 
+    colnames(result)<-c(group_by,paste0('sum ',column))
+    return(result)}
+url<-'https://olgabelitskaya.github.io/huge_cities.tsv'
+sep='\t'; column<-'growth'; group_by<-'country'
+mean_aggr_csv(url,sep,column,group_by)
+</script></div><br/>
+      <h1>R Basic Graphics</h1>
+R <br/>
+<div class='sage_r'><script type='text/x-sage'>
+%%r
+svg(filename='Rplots.svg',width=8,height=4,onefile=TRUE,
+    antialias=c('default','none','gray','subpixel'))
+options(repr.plot.width=12,repr.plot.height=7)
+par(mar=c(2,4,2,2))
+m<-10; n<-100; data<-sample(1:m,n,replace=TRUE)
+xmax<-round(1.2*max(table(data)))
+pal<-colorRampPalette(
+    colors=c('firebrick','midnightblue'))(m)
+barplot(sort(table(data)),horiz=TRUE,col=pal,ylab='',
+        las=1,main='R Countplot in Seconds',xlim=c(0,xmax))
+dev.off()
+</script></div><br/>
+      <h1>Recursive Curves</h1>
+<p>&#60;script src='https://d3js.org/d3.v6.min.js'>&#60;/script> was added in the page head.</p>
+HTML &#38; JavaScript &#38; SageMathCell<br/>
+<div class='sage_html'><script type='text/x-sage'>
+%%html
+n <input type='number' id='n_frames' value=1
+style='width:160px; font-size:120%; color:#363636;
+background-color:silver; text-align:center;'/> 
+m <input type='number' id='m_frames' value=15
+style='width:160px; font-size:120%; color:#363636;
+background-color:silver; text-align:center;'/>
+run =>>> <input type='button' onclick='draw_curves();' value='update'
+style='width:160px; font-size:120%; color:#363636;
+background-color:silver; text-align:center;'/><br/><br/>
+<svg id='d301' style='background-color:silver;'/>
+<script>
+s=600;
+colors=['#3636ff','#ff3636','#ff36ff',
+        '#ffff36','#36ff36','#36ffff'];
+function subpoint(a,b,m) {
+  return [Math.floor(m/2)*(a[0]+b[0])/m,
+          Math.floor(m/2)*(a[1]+b[1])/m]};
+function subdivpoly(poly,m,iterations=1) {
+  var [p1,p2,p3]=poly,points=[];
+  var centroid=d3.polygonCentroid(poly);
+  if (iterations===0) {points.push(centroid);} 
+  else {var subset1=[p1,subpoint(p1,p3,m),p2],
+            subset2=[p2,subpoint(p1,p3,m),p3];
+        points.push(...subdivpoly(subset1,m,iterations-1));
+        points.push(...subdivpoly(subset2,m,iterations-1));}
+  return points};
+function recursive_curve(len,m,iterations) {
+  var contour1=[[0,len],[0,0],[len,0]],
+      contour2=[[len,0],[len,len],[0,len]];
+  var half1=subdivpoly(contour1,m,iterations),
+      half2=subdivpoly(contour2,m,iterations);
+  return [...half1,...half2];};
+function draw_curves() {
+  var m=parseInt(document.getElementById('m_frames').value);
+  var n=parseInt(document.getElementById('n_frames').value);
+  var line=d3.line();
+  var svg=d3.select('#d301').attr('width',s).attr('height',s);
+  svg.selectAll('path').remove();
+  svg.selectAll('.curve').data(colors).join('path')
+     .attr('d',(_,i)=>line(recursive_curve(s,m,i+n))+'z')
+     .style('fill',d=>d).style('fill-opacity',.02)
+     .style('stroke',d=>d).style('stroke-width',2); };
+</script></div><br/>
+      <h1>Animated Lines</h1>
+<p>&#60;script src='https://d3js.org/d3.v6.min.js'>&#60;/script> was added in the page head.</p>
+HTML &#38; JavaScript &#38; SageMathCell<br/>
+<div class='sage_html'><script type='text/x-sage'>
+%%html
+number <select id='num_points' 
+style='text-align:center; text-align-last:center; 
+  background:silver; width:200px; height:25px'>
+    <option value='100'>100</option><option value='150'>150</option>
+    <option value='200'>200</option><option value='250'>250</option>
+    <option value='300'>300</option><option value='350'>350</option>
+</select><br/><br/>run &nbsp; &nbsp; &nbsp; &nbsp;
+<button style='background:silver; width:200px; height:25px'
+onclick='draw_chart();' id='run_button'>=>>></button><br/><br/>
+<svg id='d302' style='background-color:silver;'/><script>
+margin={top:20,right:20,bottom:20,left:60},width=600,height=400;
+reveal=path=>
+path.transition().duration(10000).ease(d3.easeLinear)
+    .attrTween('stroke-dasharray',function() {
+      const length=this.getTotalLength();
+      return d3.interpolate(`0,${length}`,`${length},${length}`);});
+function draw_chart() {
+  var n=parseInt(document.getElementById('num_points').value);
+  var x=d3.scaleLinear().domain([0,n-1])
+          .range([margin.left,width-margin.right]),
+      y=d3.scaleLinear().domain([0,n])
+          .range([height-margin.bottom,margin.top]); 
+  var line=d3.line().curve(d3.curveMonotoneX)
+           .x(function(d,i) {return x(i);})
+           .y(function(d) {return y(d.y);});
+  var data=d3.range(n).map(function(d) {
+      return {'y':d3.randomUniform(n)()}; })
+  var xAxis=(g,scale=x)=>g
+      .attr('transform',`translate(0,${height-margin.bottom})`)
+      .call(d3.axisBottom(scale)
+              .ticks(width/60).tickSizeOuter(0)),
+      yAxis=(g,scale=y)=>g
+      .attr('transform',`translate(${margin.left},0)`)
+      .call(d3.axisLeft(scale).ticks(height/40));
+  var svg=d3.select('#d302')
+            .attr('width',width).attr('height',height);
+  svg.selectAll('g').remove(); svg.selectAll('path').remove();
+  svg.append('g').call(xAxis); svg.append('g').call(yAxis);
+  svg.append('path').datum(data).attr('d',line)
+     .attr('stroke','#ff36ff').attr('stroke-width',1)
+     .attr('stroke-miterlimit',1).attr('stroke-dasharray','0,1')
+     .attr('fill','none').call(reveal);};
+</script></div><br/>
+      <h1>Color Gradient & Canvas Text</h1>
+HTML &#38; JavaScript &#38; SageMathCell<br/>
+<div class='sage_html'><script type='text/x-sage'>
+%%html
+<canvas id='canvas001' width='420' height='60'/>
+<script>
+var c=document.getElementById('canvas001'); 
+var context=c.getContext('2d');
+context.font='20px Verdana';
+var gradient=context.createLinearGradient(0,0,280,0);
+gradient.addColorStop('0','#3636ff');
+gradient.addColorStop('.33','#ff36ff');
+gradient.addColorStop('.66','#36ff36');
+gradient.addColorStop('1.','#ff3636');
+context.strokeStyle=gradient;
+context.strokeText('applying color gradients to canvas texts',10,35)
+</script></div><br/>
+  </body>
+</html>

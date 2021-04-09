@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset='utf-8'>
+    <title>🏙 Data Building Practice</title>
+  </head>
+  <style>
+    @import 'https://fonts.googleapis.com/css?family=Akronim';
+    h1,h2,h3,h4 {color:slategray; font-family:Akronim; text-shadow:4px 4px 4px #aaa; padding-left:20px;}
+    .tr1 {font-family:Akronim; font-size:36px; border:double slategray;}
+    .tr2 {background-color:silver;}
+    .td1 {width:35%; padding-left:20px;}
+    p,a {color:slategray; font-size:110%; text-shadow:4px 4px 4px #aaa; padding-left:20px;}
+    details > summary {width:90%; background-color:silver; cursor:pointer;
+                       border:double slategray; box-shadow:4px 4px 4px #aaa;}
+    body {margin:5px 5px 5px 20px; background:whitesmoke; border:double slategray;}
+  </style>
+  <body>
+    <div class='navbar'>
+      <a href='https://olgabelitskaya.gitlab.io/index.html'>🌐 &nbsp; Homepage &nbsp; &nbsp;</a>  
+      <a href='https://olgabelitskaya.github.io/README.html'>🌐 &nbsp; GitHub Pages &nbsp; &nbsp;</a>
+      <a href='https://www.kaggle.com/olgabelitskaya'>🌐 &nbsp; Kaggle Profile &nbsp; &nbsp;</a>  
+      <a href='https://www.instagram.com/olga.belitskaya/'>🌐 &nbsp; Instagram Posts &nbsp; &nbsp;</a>     
+      <a href='https://www.pinterest.ru/olga_belitskaya/code-style/'>🌐 &nbsp; Pinterest Posts</a>
+    </div><br/>
+    <h1 id='colored_header1' style='font-size:36px;'>
+      <center>🏙  Data Building Practice</center></h1><br/>
+    <table style='width:90%; color:darkslategray; font-size:110%; border-collapse:collapse; border:double slategray;'>
+      <tr class='tr1'><th>Part</th><th>Description</th><th>Modules</th></tr>
+      <tr class='tr2'><td class='td1'><a href='https://olgabelitskaya.gitlab.io/data_building_projects/DB_PP0_0_SMC.html'>
+      📑 0_0: </a><br/>Artificial Image Data</td>
+        <td><center>artificial images, array processing, classification, regression</center></td>
+        <td><center>numpy, sagemath, h5py, skimage, pandas</center></td></tr>
+      <tr><td class='td1'><a href='https://olgabelitskaya.gitlab.io/data_building_projects/DB_PP1_0_SMC.html'>
+      📑 1_0: </a><br/>Letter Detection</td>
+          <td><center>photos, image processing, object detection</center></td>
+          <td><center>numpy, opencv, h5py, zip</center></td></tr>
+    </table>
+    <br/><br/>
+    <script>
+      var tc=setInterval(function() {
+        var list=document.getElementsByClassName('td1');
+        var n=list.length;
+        var doc1=document.getElementById('colored_header1');
+        var now=new Date().getTime();
+        var sec=Math.floor((now%(1000*60))/1000);
+        var col='rgb('+(10+Math.abs(245-8*sec))+',0,'+(255-Math.abs(245-8*sec))+')';
+        doc1.style.color=col;
+        for (var i=0; i<n; i++) {list[i].style.color=col;} },
+        1000);
+    </script>   
+  </body>
+</html>

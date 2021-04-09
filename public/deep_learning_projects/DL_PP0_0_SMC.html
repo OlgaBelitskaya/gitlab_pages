@@ -1,0 +1,177 @@
+<!DOCTYPE HTML>
+<html>
+  <head>
+    <meta charset='utf-8'>
+    <meta name='viewport' content='width=device-width'>
+    <title>🏙 DL PP0_0 SMC</title>
+    <script src='https://sagecell.sagemath.org/static/embedded_sagecell.js'></script>
+    <script>$(function(){
+      sagecell.makeSagecell(
+        {inputLocation:'div.linked',linked:true,evalButtonText:'run linked cells'}); });
+    </script>
+  </head>
+  <style>
+    @import 'https://fonts.googleapis.com/css?family=Akronim|Lobster';
+    h1,h2,th {color:#348ABD; font-family:Akronim; font-size:120%; text-shadow:4px 4px 4px #aaa;}
+    p,a,table {color:slategray; font-family:Lobster; font-size:120%; text-shadow:4px 4px 4px #aaa;}
+    .sagecell .CodeMirror-scroll {min-height:3em; max-height:70em;}
+    body {margin:5px 5px 5px 15px;}
+  </style>  
+  <body>
+    <h1>📑 &nbsp; Deep Learning. Practice Project 0_0: Image Classification</h1>
+<a href='https://olgabelitskaya.gitlab.io/index.html'>&#x1F300; &nbsp; Homepage &nbsp; &nbsp;</a>
+<a href='https://olgabelitskaya.gitlab.io/deep_learning_projects/index.html'>
+&#x1F300; &nbsp; Project List &nbsp; &nbsp;</a>
+<a href='https://olgabelitskaya.gitlab.io/deep_learning_projects/DL_PP0_0_colaboratory.html'>
+&#x1F300; &nbsp; Colaboratory Gist &nbsp; &nbsp;</a>
+<a href='https://olgabelitskaya.gitlab.io/deep_learning_projects/DL_PP1_0_SMC.html'>
+&#x1F300; &nbsp; Next &nbsp; &nbsp;</a><br/>
+<a href='https://olgabelitskaya.github.io/README.html'>&#x1F300; &nbsp; GitHub Pages &nbsp; &nbsp;</a>
+<a href='https://www.instagram.com/olga.belitskaya/'>&#x1F300; &nbsp; Instagram Posts &nbsp; &nbsp;</a>
+<a href='https://www.pinterest.ru/olga_belitskaya/code-style/'>&#x1F300; &nbsp; Pinterest Posts</a><br/>
+In this project, we'll classify images from the 
+<a href='https://www.kaggle.com/olgabelitskaya/flower-color-images'>Flower Color Images Dataset</a>.<br/>
+The content is very simple:<br/> 
+603 images (128x128x3) with 20 species of flowering plants stored in the file <i>Flowers128.h5</i>.<br/>
+In the original dataset, photo files are in the .png format and class labels are integers.<br/>
+We'll preprocess the images, then train a neural network on all the samples.<br/> 
+The images need to be normalized, shuffled, and divided into three subsets.<br/>
+We are going to apply 
+<a href='https://keras.io/'>Keras: The Python Deep Learning library.</a><br/>
+At the end, we'll get to see the neural network's predictions on the sample images.<br/>
+    <h2>✒️ &nbsp;Step 0. Import Libraries</h2>      
+<div class='linked'><script type='text/x-sage'>
+import warnings; warnings.filterwarnings('ignore')
+import tensorflow as tf,numpy as np,pandas as pd
+import seaborn as sn,pylab as pl,h5py,urllib
+import tensorflow.keras.callbacks as tkc,\
+tensorflow.keras.layers as tkl
+from IPython.display import HTML
+HTML('<style>.sagecell_input {text-shadow:4px 4px 4px #aaa;}</style>')
+</script></div><br/>      
+    <h2>✒️ &nbsp;Step 1. Load and Explore the Data</h2> 
+<div class='linked'><script type='text/x-sage'>
+path='https://raw.githubusercontent.com/OlgaBelitskaya/data_kitchen/main/'
+zf='Flowers128.h5'; input_file=urllib.request.urlopen(path+zf)
+output_file=open(zf,'wb'); output_file.write(input_file.read())
+output_file.close(); input_file.close()
+with h5py.File(zf,'r') as f:
+    keys=list(f.keys())
+    pretty_print(html('<p>h5py.File keys: '+', '.join(keys)+'</p>'))
+    images=np.array(f[keys[0]]); labels=np.array(f[keys[1]])
+    names=[el.decode('utf-8')for el in f[keys[2]]]
+    f.close()
+os.remove(zf)
+</script></div><br/>
+<div class='linked'><script type='text/x-sage'>
+df=pd.DataFrame(labels,columns=['label'])
+df['class']=[names[l] for l in labels]
+pl.figure(figsize=(8,4))
+sn.countplot(y='class',data=df,palette='cool',alpha=.5)
+ti='Label Distribution'
+pl.title(ti,fontsize=16); pl.tight_layout(); pl.show()
+</script></div><br/>
+    <h2>✒️ &nbsp;Step 2. Save the Data</h2>      
+<div class='linked'><script type='text/x-sage'>
+maxlen=max([len(n) for n in names])
+names=np.array([np.string_(name) for name in names])
+with h5py.File(zf,'w') as f:
+    f.create_dataset('images',data=images,compression='gzip')
+    f.create_dataset('labels',data=labels,compression='gzip')
+    f.create_dataset('names',data=names,
+                     dtype='S%d'%maxlen,compression='gzip')
+    f.close()
+pretty_print(html('<p>info: %s</p>'%str(os.stat(zf))))
+</script></div><br/>
+    <h2>✒️ &nbsp;Step 3. Implement Preprocess Functions</h2>
+<div class='linked'><script type='text/x-sage'>
+N=labels.shape[0]; n=int(.1*N); shuffle_ids=np.arange(N)
+np.random.RandomState(12).shuffle(shuffle_ids)
+images=images[shuffle_ids]; labels=labels[shuffle_ids]
+x_test,x_valid,x_train=images[:n],images[n:2*n],images[2*n:]
+y_test,y_valid,y_train=labels[:n],labels[n:2*n],labels[2*n:]
+df=pd.DataFrame(
+    [[x_train.shape,x_valid.shape,x_test.shape],
+     [x_train.dtype,x_valid.dtype,x_test.dtype],
+     [y_train.shape,y_valid.shape,y_test.shape],
+     [y_train.dtype,y_valid.dtype,y_test.dtype]],
+    columns=['train','valid','test'],
+    index=['image shape','image type','label shape','label type'])
+fig=pl.figure(figsize=(8,4)); n=randint(1,100)
+for i in range(n,n+6):
+    ax=fig.add_subplot(2,3,i-n+1,xticks=[],yticks=[])
+    ax.set_title(
+        names[labels[i]].decode('utf-8'),color='slategray',
+        fontdict={'fontsize':'large'})
+    ax.imshow((images[i]))
+pl.tight_layout(); pl.show(); display(df)
+</script></div><br/>
+    <h2>✒️ &nbsp;Step 4. Define the Model</h2>
+<div class='linked'><script type='text/x-sage'>
+def model():
+    model=tf.keras.Sequential(); dr=float(.25)
+    model.add(tkl.Conv2D(int(32),(int(3),int(3)),padding='same', 
+                         input_shape=x_train.shape[int(1):]))
+    model.add(tkl.Activation('relu'))
+    model.add(tkl.MaxPooling2D(pool_size=(int(2),int(2))))
+    model.add(tkl.Dropout(dr))
+    model.add(tkl.GlobalMaxPooling2D())    
+    model.add(tkl.Dense(int(256),activation='tanh'))
+    model.add(tkl.Dropout(dr))      
+    model.add(tkl.Dense(int(20)))
+    model.add(tkl.Activation('softmax'))
+    model.compile(loss='sparse_categorical_crossentropy', 
+                  optimizer='nadam',metrics=['accuracy'])    
+    return model
+model=model()
+</script></div><br/>
+    <h2>✒️ &nbsp;Step 5. Train the Model</h2>
+<div class='linked'><script type='text/x-sage'>
+checkpointer=tkc.ModelCheckpoint(
+    filepath='/tmp/checkpoint',verbose=int(2),save_weights_only=True,
+    monitor='val_accuracy',mode='max',save_best_only=True)
+history=model.fit(
+    x_train,y_train,batch_size=int(16),epochs=int(8),verbose=int(2),
+    validation_data=(x_valid,y_valid),callbacks=[checkpointer])
+</script></div><br/>
+<div class='linked'><script type='text/x-sage'>
+def keras_history_plot(fit_history,fig_size,color):
+    keys=list(fit_history.history.keys())
+    list_history=[fit_history.history[keys[i]] 
+                  for i in range(len(keys))]
+    dfkeys=pd.DataFrame(list_history).T
+    dfkeys.columns=keys
+    fig=pl.figure(figsize=(fig_size,fig_size))
+    ax1=fig.add_subplot(2,1,1)
+    dfkeys.iloc[:,[int(0),int(2)]].plot(
+        ax=ax1,color=['slategray',color])
+    pl.grid(); ax2=fig.add_subplot(2,1,2)
+    dfkeys.iloc[:,[int(1),int(3)]].plot(
+        ax=ax2,color=['slategray',color])
+    pl.grid(); pl.show()
+keras_history_plot(history,7,'#348ABD')
+</script></div><br/>
+    <h2>✒️ &nbsp;Step 6. Evaluate and Save the Model</h2>
+<div class='linked'><script type='text/x-sage'>
+model.load_weights('/tmp/checkpoint')
+#model.save('model.h5')
+#model=load_model('model.h5')
+model.evaluate(x_test,y_test,verbose=int(0))
+</script></div><br/>
+    <h2>✒️ &nbsp;Step 7. Display Predictions</h2>
+<div class='linked'><script type='text/x-sage'>
+y_test_predict=model.predict_classes(x_test)
+fig=pl.figure(figsize=(8,4))
+randch=np.random.choice(x_test.shape[0],size=6,replace=False)
+for i,idx in enumerate(randch):
+    ax=fig.add_subplot(2,3,i+1,xticks=[],yticks=[])
+    ax.imshow(np.squeeze(x_test[idx]))
+    pred_idx=y_test_predict[idx]; true_idx=y_test[idx]
+    ti='{} ({})'.format(names[pred_idx].decode('utf-8'),
+                        names[true_idx].decode('utf-8'))
+    ax.set_title(ti,fontdict={'fontsize':'large'},
+                 color=('#348ABD' if pred_idx==true_idx else 'darkorange'))
+pl.tight_layout(); pl.show()
+</script></div><br/>
+  </body>
+</html>

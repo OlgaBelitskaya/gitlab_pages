@@ -1,0 +1,311 @@
+<!DOCTYPE HTML>
+<html>
+  <head>
+    <meta charset='utf-8'>
+    <meta name='viewport' content='width=device-width'>
+    <title>📑 D3 Workout 01</title>
+    <script src='https://sagecell.sagemath.org/static/embedded_sagecell.js'></script>
+    <script>$(function() {
+        sagecell.makeSagecell({inputLocation:'div.sagehtml',evalButtonText:'run'}); });
+    </script>
+    <script src='https://d3js.org/d3.v6.min.js'></script>
+    <script src='https://code.highcharts.com/highcharts.js'></script>
+    <script src='https://code.highcharts.com/highcharts-more.js'></script>
+    <script src='https://code.highcharts.com/modules/dumbbell.js'></script>
+  </head>
+  <style>
+  @import 'https://fonts.googleapis.com/css?family=Akronim';
+  h1,h2,h3,h4 {color:darkblue; font-family:Akronim; 
+               text-shadow:4px 4px 4px #aaa; padding-left:20px;}
+  p,a {color:slategray; font-size:110%; text-shadow:4px 4px 4px #aaa; padding-left:20px;}
+  body {margin:5px 5px 5px 20px; background:whitesmoke; border:double slategray;}
+  .sagecell .CodeMirror-scroll {min-height:3em; max-height:90em;}
+  #d301p01,#d301p02,#d301svg01 {padding-left:20px;}
+  #d301svg01 {border:double slategray;}
+  </style>
+  <body>
+    <div class='navbar'>
+    &nbsp; &nbsp; &nbsp; &nbsp;
+    <a href='https://olgabelitskaya.gitlab.io/index.html'>🌐 &nbsp; Homepage &nbsp; &nbsp;</a>
+    &nbsp; &nbsp; &nbsp; &nbsp;
+    <a href='https://olgabelitskaya.gitlab.io/workout/index.html'>🌐 &nbsp; Workout List</a>
+    &nbsp; &nbsp; &nbsp; &nbsp;
+    <a href='https://olgabelitskaya.github.io/README.html'>🌐 &nbsp; GitHub Pages &nbsp; &nbsp;</a>
+    &nbsp; &nbsp; &nbsp; &nbsp; 
+    <a href='https://www.instagram.com/olga.belitskaya/'>🌐 &nbsp; Instagram Posts &nbsp; &nbsp;</a> 
+    &nbsp; &nbsp; &nbsp; &nbsp;    
+    <a href='https://www.pinterest.ru/olga_belitskaya/code-style/'>🌐 &nbsp; Pinterest Posts</a>
+    </div><br/>
+    <h1>📑 D3 Workout 01</h1>
+    <h2>Code Modules</h2>
+<p id='d301p01'>&#60;script src='https://d3js.org/d3.v6.min.js'>&#60;/script> 
+    was added in the page head.</p>
+    <h2>Timers for Color Interpolation</h2>
+<div class='sagehtml'><script type='text/x-sage'>
+%%javascript
+var tc=setInterval(function() {
+  var now=new Date().getTime();
+  var n=Math.abs(120-4*Math.floor((now%(1000*60))/1000));
+  var svg1=d3.select('#d301svg01').attr('width',284).attr('height',264)
+             .call(svg=>svg.selectAll('circle')
+             .data(d3.range(128,0,-8)).join('circle')
+             .attr('transform','translate(132,132)')
+             .attr('fill',d3.scaleSequential(
+               d3.interpolateSinebow).domain([0,128+n]))
+             .attr('r',d =>d)).node();},1);
+</script></div><br/>
+<svg id='d301svg01'></svg><br/>
+    <h2>Random Curves</h2>
+<div class='sagehtml'><script type='text/x-sage'>
+%%html
+<style>@import 'https://fonts.googleapis.com/css?family=Akronim';</style>
+<svg id='d301svg02' style='background-color:silver;'/><br/><br/>
+<script>
+m=20,margin2={top:m,right:m,bottom:m,left:m},
+width2=600-margin2.left-margin2.right,
+height2=600-margin2.top-margin2.bottom;
+function randi(min,max) {
+    return Math.floor(Math.random()*(max-min+1))+min;};
+function randcol() {
+    var g=randi(50,200),b=randi(50,200);
+    return '#00'+g.toString(16)+b.toString(16);}
+function fx(a,b,c,d,e,f,t) {
+    var x1=Math.sin(t/d),
+        x2=(-1)**f*a*Math.sin(b*t)*Math.cos(t),
+        x3=(-1)**f*c*Math.sin(e*b*t);
+    return x1+x2+x3};
+function fy(a,b,c,d,e,f,t) {
+     var y1=Math.cos(t/d),
+         y2=(-1)**f*a*Math.sin(b*t)*Math.sin(t),
+         y3=(-1)**f*c*Math.cos(e*b*t);
+     return y1+y2+y3};
+function make_data() {
+    const a=randi(5,15)/10,b=randi(6,12),c=randi(1,100)/10**3,
+          d=randi(5,7),e=randi(14,18),f=randi(1,2);
+    var data=d3.range(1,10**3+1).map(function(k) {
+        return {'x':fx(a,b,c,d,e,f,k*b*e*Math.PI/10**3),
+                'y':fy(a,b,c,d,e,f,k*b*e*Math.PI/10**3)}; });
+    return [data,[a,b,c,d,e,f]]};
+function RandomPlot(data,coef,col) {
+    var line=d3.line().curve(d3.curveMonotoneX)
+               .x(function(d){return xScale2(d.x);})
+               .y(function(d){return yScale2(d.y);});
+    svg2.append('path').datum(data)
+        .transition().duration(10000)
+        .attr('class','line').attr('d',line)
+        .attr('stroke',col).attr('stroke-width',.5)
+        .attr('fill',col).attr('fill-opacity',.1);
+    svg2.append('text').attr('id','plot_text')
+        .text('[a,b,c,d,e,f]='+coef)
+        .attr('x',width2/2).attr('y',40)
+        .attr('fill',col);};
+xScale2=d3.scaleLinear().domain([-3,3]).range([0,width2]);
+yScale2=d3.scaleLinear().domain([-3,3]).range([height2,0]);
+svg2=d3.select('#d301svg02')
+       .attr('width',width2+margin2.left+margin2.right)
+       .attr('height',height2+margin2.top+margin2.bottom)
+       .attr('transform','translate('+margin2.left+','+margin2.top+')');
+svg2.append('text').text('<<< add a random line')
+    .attr('x',60).attr('y',40).attr('fill','#36ffff')
+    .attr('style','font-family:Akronim; font-size:120%'); 
+svg2.append('circle')
+    .attr('cx',40).attr('cy',40)
+    .attr('r',20).attr('fill','#36ffff')
+    .attr('stroke','silver').attr('stroke-width',5)
+    .on('click',function() {
+        d3.selectAll('#plot_text').transition().duration(3000).remove();
+        d3.selectAll('path').transition().duration(3000).remove();
+        var array=make_data(),col=randcol();
+        RandomPlot(array[0],array[1],col);});
+</script></div><br/>
+    <h2>Dumbbell Highcharts</h2>
+<p id='d301p02'>&#60;script src='https://code.highcharts.com/highcharts.js'>&#60;/script>
+    <br/>&#60;script src='https://code.highcharts.com/highcharts-more.js'>&#60;/script>
+    <br/>&#60;script src='https://code.highcharts.com/modules/dumbbell.js'>&#60;/script>
+    <br/>was added in the page head.</p>
+<div class='sagehtml'><script type='text/x-sage'>
+%%html
+<figure class='highcharts-figure'>
+<div id='d3highcharts_db' style='height:400px;'/></figure>
+<div id='d3highcharts_db2' style='height:400px;'/>
+</script></div><br/>
+<div class='sagehtml'><script type='text/x-sage'>
+%%javascript
+var customers_lh=[
+  {name:'Fresh',low:8504,high:12000.297727272728},
+  {name:'Milk',low:3627,high:5796.265909090909},
+  {name:'Grocery',low:4755.5,high:7951.277272727273},
+  {name:'Frozen',low:1526,high:3071.931818181818},
+  {name:'Detergents Paper',low:816.5,high:2881.4931818181817},
+  {name:'Delicatessen',low:965.5,high:1524.8704545454545}];
+Highcharts.chart('d3highcharts_db',{
+  chart:{type:'dumbbell',inverted:true},
+  legend:{enabled:false},
+  title:{text:'Median & Mean Values'},
+  tooltip:{shared:true},
+  xAxis:{type:'category'},
+  yAxis:{title:{text:'Values'}},
+  series:[{name:'median - mean',data:customers_lh}]});
+var url='https://raw.githubusercontent.com/OlgaBelitskaya/'
+        .concat('machine_learning_engineer_nd009/master/')
+        .concat('Machine_Learning_Engineer_ND_P3/customers.csv');
+d3.csv(url,d3.autoType).then((data)=>{
+  var tr_data=Object.assign(...Object.keys(data[0])
+    .map(key=>({[key]:data.map(o=>o[key])})));
+  var db_data=Object.entries(tr_data).slice(2,8).map(
+    el=>({'name':el[0],'low':d3.median(el[1]),'high':d3.mean(el[1])}))
+  Highcharts.chart('d3highcharts_db2', {
+    chart:{type:'dumbbell',inverted:true},
+    legend:{enabled:false},
+    title:{text:'Median & Mean Values'},
+    tooltip:{shared:true},
+    xAxis:{type:'category'},
+    yAxis:{title:{text:'Values'}},
+    series:[{name:'median - mean',data:db_data}] }); });
+</script></div><br/>
+    <h2>Dumbbell Charts</h2>
+<div class='sagehtml'><script type='text/x-sage'>
+%%html
+<svg id='d301svg03' style='background-color:white;'/><br/><br/>
+<script>
+db_data=[{name:'Fresh',median_mean:[8504,12000.297727272728]},
+         {name:'Milk',median_mean:[3627,5796.265909090909]},
+         {name:'Grocery',median_mean:[4755.5,7951.277272727273]},
+         {name:'Frozen',median_mean:[1526,3071.931818181818]},
+         {name:'Detergents_Paper',median_mean:[816.5,2881.4931818181817]},
+         {name:'Delicatessen',median_mean:[965.5,1524.8704545454545]}];
+m=20,margin3={top:m,right:m,bottom:m,left:6*m},
+width3=800,height3=400,col1='#36ff36',col2='#3636ff';
+svg3=d3.select('#d301svg03')
+       .attr('viewBox',[0,0,1.2*width3,1.2*height3]);
+x3=d3.scaleLinear()
+     .domain([0,d3.max(db_data,d=>d.median_mean[1])])
+     .range([margin3.left,width3-margin3.right]);
+y3=d3.scalePoint()
+     .domain(db_data.map(d=>d.name))
+     .rangeRound([margin3.top,height3-margin3.bottom]);
+xAxis3=g=>g.attr('transform',
+    'translate('+margin3.left+','+height3-margin3.bottom+')')
+    .call(d3.axisBottom(x3).ticks(.02*width3).tickSizeOuter(0))
+    .call(g=>g.select('.domain').remove());
+yAxis3=g=>g.attr('transform',
+    'translate('+margin3.left+','+margin3.top+')')
+    .call(d3.axisLeft(y3))
+    .call(g=>g.select('.domain').remove())
+    .call(g=>g.select('.tick:last-of-type text')
+              .append('tspan').text(db_data.name));    
+svg3.append('g').append('text').attr('text-anchor','middle')
+    .attr('x',width3/2+margin3.left)
+    .attr('y',height3+margin3.bottom+margin3.top)
+    .style('font-size','20px')
+    .text('Median & Mean Values');
+svg3.append('g').call(xAxis3).style('font-size','12px');
+svg3.append('g').call(yAxis3).style('font-size','12px');
+var lines3=svg3.append('g').attr('class','lines')
+               .attr('transform',`translate(0,${margin3.top})`)
+               .selectAll('line').data(db_data).join('line')
+               .attr('stroke','#363636').attr('stroke-width',4)
+               .attr('opacity','.7')
+               .attr('x1',d=>x3(d.median_mean[0]))
+               .attr('x2',d=>x3(d.median_mean[1]))
+               .attr('y1',d=>y3(d.name)).attr('y2',d=>y3(d.name));
+var dots3=svg3.append('g').attr('class','dots')
+              .attr('transform',`translate(0,${margin3.top})`)
+              .selectAll('circle').data(db_data).join('circle')
+              .attr('fill',col1).attr('r',8)
+              .attr('cx',d=>x3(d.median_mean[0]))
+              .attr('cy',d=>y3(d.name))
+              .clone(true)
+              .attr('cx',d=>x3(d.median_mean[1]))
+              .attr('fill',col2);
+svg3.append('g').attr('id','legend_dot1').append('circle')
+    .attr('cx',width3).attr('cy',height3/2)
+    .attr('r',8).style('fill',col1);
+svg3.append('text').text('<<< median')
+    .attr('x',width3+10).attr('y',height3/2+4);
+svg3.append('g').attr('id','legend_dot2').append('circle')
+    .attr('cx',width3).attr('cy',height3/2+2*m)
+    .attr('r',8).style('fill',col2);
+svg3.append('text').text('<<< mean')
+    .attr('x',width3+10).attr('y',height3/2+2*m+4);
+</script></div><br/>
+    <h2>Chart Building</h2>
+<div class='sagehtml'><script type='text/x-sage'>
+%%html
+<style>
+@import 'https://fonts.googleapis.com/css?family=Wallpoet';
+#d3barchart_title {color:silver; font-family:Wallpoet; font-size:20px}
+#d3barchart {width:70%; height:30%;}
+</style>
+<div id='d3barchart'><text id='d3barchart_title'></text></div>
+</script></div><br/>
+<div class='sagehtml'><script type='text/x-sage'>
+%%javascript
+var data=[4,12,21,38,42,55];
+var tc=setInterval(function(){
+    var now=new Date().getTime();
+    var width=.7*Math.max(window.screen.width,window.innerWidth);
+    var div=d3.select('#d3barchart');
+    div.select('#d3barchart_title')
+       .text('An Example of D3 Bar Charts');
+    div.style('text-align','right')
+       .style('text-shadow','3px 3px 3px slategray')
+       .style('padding','5px')
+       .style('color',d3.interpolateSinebow(now/1000000))
+       .style('background',d3.interpolateSinebow(now/1000000));
+    var x=d3.scaleLinear().domain([0,d3.max(data)]).range([0,.85*width])
+    div.selectAll('div').data(data).join('div')
+       .style('background','silver')
+       .style('padding','5px').style('margin','1px')
+       .style('width',d=>x(d)+'px')
+       .style('font-family','Wallpoet')
+       .style('font-size','20px')
+       .text(d=>d);},100);
+</script></div><br/>
+    <h2>Scatter Plotting of 2D Projections</h2>
+<div class='sagehtml'><script type='text/x-sage'>
+%%html
+<style>.grid1 line,.grid1 path {stroke:slategray;stroke-opacity:.5;}</style>
+<svg id='d301svg04' style='background-color:black'/>
+<script>
+var url='https://olgabelitskaya.github.io/beethoven.csv';
+d3.csv(url,d3.autoType).then((data)=>{
+    var xmin=d3.min(data,function(d) {return d.y;}),
+        xmax=d3.max(data,function(d) {return d.y;}); 
+    var ymin=d3.min(data,function(d) {return d.z;}),
+        ymax=d3.max(data,function(d) {return d.z;});
+    var n=data.length;
+    var m=20,margin={top:m,right:m,bottom:m,left:m},
+        width=500-margin.left-margin.right,
+        height=700-margin.top-margin.bottom;
+    var xScale=d3.scaleLinear().domain([1.1*xmin,1.1*xmax]).range([0,width]); 
+    var yScale=d3.scaleLinear().domain([1.1*ymin,1.1*ymax]).range([height,0]); 
+    function make_x_gridlines() {return d3.axisBottom(xScale).ticks(11)}; 
+    function make_y_gridlines() {return d3.axisLeft(yScale).ticks(11)}; 
+    var pointColor=d3.scaleSequential().domain([0,n])
+                     .interpolator(d3.interpolateRainbow); 
+    var tr='translate('+margin.left+','+margin.top+')'; 
+    var svg=d3.select('#d301svg04')
+              .attr('width',width+margin.left+margin.right)
+              .attr('height',height+margin.top+margin.bottom)
+              .append('g').attr('transform',tr); 
+    svg.append('g').attr('class','xaxis1')
+       .call(d3.axisBottom(xScale).tickSize(.5))
+       .attr('transform','translate(0,'+height+')'); 
+    svg.append('g').attr('class','yaxis1')
+       .call(d3.axisLeft(yScale).tickSize(.5)); 
+    svg.append('g').attr('class','grid1')
+       .attr('transform','translate(0,'+height+')')
+       .call(make_x_gridlines().tickSize(-height).tickFormat('')); 
+    svg.append('g').attr('class','grid1')
+       .call(make_y_gridlines().tickSize(-width).tickFormat(''))
+       .attr('stroke','#fff');
+    svg.selectAll('.point').data(data).enter()
+       .append('circle').attr('class','point')
+       .attr('fill',function(d,i){return pointColor(i)}).attr('r',.7)
+       .attr('stroke','#fff').attr('stroke-width',.07)
+       .attr('cx',function(d) {return xScale(d.y)})
+       .attr('cy',function(d) {return yScale(d.z)}); });
+</script></div><br/>
+  </body>
+</html>

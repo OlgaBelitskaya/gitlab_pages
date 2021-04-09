@@ -1,0 +1,219 @@
+<!DOCTYPE HTML>
+<html>
+  <head>
+    <meta charset='utf-8'>
+    <meta name='viewport' content='width=device-width'>
+    <title>🏙 DL PP2_1 SMC</title>
+    <script src='https://sagecell.sagemath.org/static/embedded_sagecell.js'></script>
+    <script>$(function(){
+      sagecell.makeSagecell(
+        {inputLocation:'div.linked',linked:true,evalButtonText:'run linked cells'}); });
+    </script>
+  </head>
+  <style>
+    @import 'https://fonts.googleapis.com/css?family=Akronim|Lobster';
+    h1,h2,th {color:#348ABD; font-family:Akronim; font-size:120%; text-shadow:4px 4px 4px #aaa;}
+    p,a {color:slategray; font-family:Lobster; font-size:120%; text-shadow:4px 4px 4px #aaa;}
+    .sagecell .CodeMirror-scroll {min-height:3em; max-height:70em;}
+    body {margin:5px 5px 5px 15px;}
+  </style>  
+  <body>
+    <h1>📑 &nbsp; Deep Learning. Practice Project 2_1: Classification with Keras Applications</h1>
+<a href='https://olgabelitskaya.gitlab.io/index.html'>&#x1F300; &nbsp; Homepage &nbsp; &nbsp;</a>
+<a href='https://olgabelitskaya.gitlab.io/deep_learning_projects/index.html'>&#x1F300; &nbsp; Project List &nbsp; &nbsp;</a>
+<a href='https://olgabelitskaya.github.io/README.html'>&#x1F300; &nbsp; GitHub Pages &nbsp; &nbsp;</a>
+<a href='https://olgabelitskaya.gitlab.io/deep_learning_projects/DL_PP1_0_SMC.html'>
+&#x1F300; &nbsp; Previous &nbsp; &nbsp;</a>
+<a href='https://olgabelitskaya.gitlab.io/deep_learning_projects/DL_PP2_0_SMC.html'>
+&#x1F300; &nbsp; Main &nbsp; &nbsp;</a>
+<a href='https://olgabelitskaya.gitlab.io/deep_learning_projects/DL_PP3_0_SMC.html'>
+&#x1F300; &nbsp; Next &nbsp; &nbsp;</a>
+<a href='https://www.instagram.com/olga.belitskaya/'>&#x1F300; &nbsp; Instagram Posts &nbsp; &nbsp;</a>
+<a href='https://www.pinterest.ru/olga_belitskaya/code-style/'>&#x1F300; &nbsp; Pinterest Posts</a><br/>
+For this project, I have created the dataset of color images (32x32x3) with 33 handwritten Russian letters.<br/>
+There are four types of letter backgrounds here. <br/>
+They are labeled in this dataset as well.<br/>
+<div class='linked'><script type='text/x-sage'>
+import urllib,os; from IPython.display import HTML
+file_path='https://raw.githubusercontent.com/OlgaBelitskaya/data/main/symbols/'
+lf=['00_00_00_00_001.png','00_00_02_01_001.png','00_00_01_02_001.png','00_00_00_03_001.png']
+for f in lf:
+    input_file=urllib.request.urlopen(file_path+f)
+    output_file=open(f,'wb')
+    output_file.write(input_file.read())
+    output_file.close(); input_file.close()
+url='https://sagecell.sagemath.org/kernel/'
+url+=os.getcwd()[14:]+'/files/'
+HTML("""<style>@import 
+'https://fonts.googleapis.com/css?family=Akronim|Aladin';
+.sagecell_input {text-shadow:4px 4px 4px #aaa;}</style>
+<table style='width:50%; background-color:ghostwhite; font-family:Aladin; font-size:120%;'>
+<tr style='font-family:Akronim;'><th><center>Background</center></th>
+<th><center>Image</center></th></tr>
+<tr><td><center>single-colored paper</center></td><td><center>
+<img width='50' height='50' src="""+url+lf[0]+""" alt='bg0'></center></td></tr>
+<tr><td><center>striped paper</center></td><td><center>
+<img width='50' height='50' src="""+url+lf[1]+""" alt='bg1'></center></td></tr>
+<tr><td><center>squared paper</center></td><td><center>
+<img width='50' height='50' src="""+url+lf[2]+""" alt='bg2'></center></td></tr>
+<tr><td><center>graph paper</center></td><td><center>
+<img width='50' height='50' src="""+url+lf[3]+""" alt='bg3'>
+</center></td></tr></table>""")
+</script></div><br/>
+    <h2>✒️&nbsp;Step 0. Importing Libraries and Defining Helpful Functions</h2>      
+<div class='linked'><script type='text/x-sage'>
+import warnings; warnings.filterwarnings('ignore')
+import h5py,urllib,tensorflow as tf
+import pandas as pd,numpy as np,pylab as pl,seaborn as sn
+from IPython.display import display
+from tensorflow.keras.preprocessing import image as tkimg
+import tensorflow.keras.callbacks as tkc,tensorflow.keras.layers as tkl
+np.set_printoptions(precision=6)
+</script></div><br/>
+<div class='linked'><script type='text/x-sage'>
+def h5file2data(h5file,cmap,img_size,n1,n2,resize=False):
+    with h5py.File(h5file,'r') as f:
+        keys=list(f.keys())
+        pretty_print('file keys: '+', '.join(keys))
+        images=np.array(f[keys[int(0)]])
+        labels=np.array(f[keys[int(1)]])
+        names=[[el.decode('utf-8') for el in f[keys[i]]]
+               for i in range(int(2),len(keys))]
+        f.close()
+    N=images.shape[int(0)]; n=int(.1*N) 
+    shuffle_ids=np.arange(N)
+    np.random.RandomState(12).shuffle(shuffle_ids)
+    images=images[shuffle_ids]
+    if resize:
+        images=tf.image.resize(images,[img_size,img_size]).numpy()
+    labels=np.array([labels[i][shuffle_ids] 
+                     for i in range(labels.shape[int(0)])])
+    x_test,x_valid,x_train=images[:n],images[n:2*n],images[2*n:]
+    x_train,x_valid,x_test=x_train[:n1],x_valid[:n2],x_test[:n2]
+    y_test,y_valid,y_train=labels[:,:n],labels[:,n:2*n],labels[:,2*n:]   
+    y_train,y_valid,y_test=y_train[int(1),:n1],y_valid[int(1),:n2],y_test[int(1),:n2]
+    pretty_print('data outputs: ')
+    df=pd.DataFrame([[x_train.shape,x_valid.shape,x_test.shape],
+                     [x_train.dtype,x_valid.dtype,x_test.dtype],
+                     [y_train.shape,y_valid.shape,y_test.shape],
+                     [y_train.dtype,y_valid.dtype,y_test.dtype]],
+                    columns=['train','valid','test'],
+                    index=['image shape','image type',
+                           'label shape','label type'])
+    display(df)      
+    return [names,x_train,x_valid,x_test,y_train,y_valid,y_test]
+def keras_history_plot(fit_history,fig_size,color):
+    keys=list(fit_history.history.keys())
+    list_history=[fit_history.history[keys[i]] for i in range(len(keys))]
+    dfkeys=pd.DataFrame(list_history).T
+    dfkeys.columns=keys
+    fig=pl.figure(figsize=(fig_size,fig_size/1.5))
+    ax1=fig.add_subplot(2,1,1)
+    dfkeys.iloc[:,[int(0),int(2)]].plot(ax=ax1,color=['slategray',color])
+    pl.grid(); ax2=fig.add_subplot(2,1,2)
+    dfkeys.iloc[:,[int(1),int(3)]].plot(ax=ax2,color=['slategray',color])
+    pl.grid(); pl.tight_layout(); pl.show()
+</script></div><br/> 
+    <h2>✒️&nbsp;Step 1. Loading and Preprocessing the Data</h2>       
+<div class='linked'><script type='text/x-sage'>
+path='https://raw.githubusercontent.com/OlgaBelitskaya/data_kitchen/main/'
+zf='Letters32.h5'; input_file=urllib.request.urlopen(path+zf)
+output_file=open(zf,'wb'); output_file.write(input_file.read())
+output_file.close(); input_file.close()
+img_size=int(32); n1=int(1500); n2=int(150)
+[names,x_train,x_valid,x_test,y_train,y_valid,y_test]=\
+h5file2data(zf,'Pastel1',img_size,n1,n2)
+os.remove(zf)
+</script></div><br/>
+      <h2>✒️ &nbsp; Step 2. Keras Applications</h2>
+Unfortunately, we can train with guarantee only one neural network at ones.<br/>
+Please, restart the page and load the data again for training each of them in the case of failure.<br/>
+<p>VGG16</p>
+<div class='linked'><script type='text/x-sage'>
+from tensorflow.keras.applications.vgg16 import VGG16
+vgg16bmodel=VGG16(weights='imagenet',include_top=False)
+pvx_train=vgg16bmodel.predict(x_train)
+pvx_valid=vgg16bmodel.predict(x_valid)
+pvx_train=pvx_train.reshape(-int(1),int(1),int(1),pvx_train.shape[3])
+pvx_valid=pvx_valid.reshape(-int(1),int(1),int(1),pvx_valid.shape[3])
+pvx_test=vgg16bmodel.predict(x_test)
+pvx_test=pvx_test.reshape(-int(1),int(1),int(1),pvx_test.shape[3])
+</script></div><br/>
+<div class='linked'><script type='text/x-sage'>
+sh=pvx_train.shape[1:]
+def vgg16model():
+    model=tf.keras.Sequential()  
+    model.add(tkl.GlobalAveragePooling2D(input_shape=sh))   
+    model.add(tkl.Dense(int(2048)))
+    model.add(tkl.LeakyReLU(alpha=float(.02)))
+    model.add(tkl.Dropout(float(.25)))        
+    model.add(tkl.Dense(int(256)))
+    model.add(tkl.LeakyReLU(alpha=float(.02)))
+    model.add(tkl.Dropout(float(.25)))   
+    model.add(tkl.Dense(int(33),activation='softmax'))    
+    model.compile(loss='sparse_categorical_crossentropy',
+                  optimizer='nadam',metrics=['accuracy'])
+    return model
+vgg16model=vgg16model()
+</script></div><br/>  
+<div class='linked'><script type='text/x-sage'>
+fw='/tmp/checkpoint'
+checkpointer=tkc.ModelCheckpoint(
+    filepath=fw,verbose=int(2),save_weights_only=True,
+    monitor='val_accuracy',mode='max',save_best_only=True)
+lr_reduction=tkc.ReduceLROnPlateau(
+    monitor='val_loss',patience=int(5),verbose=int(2),factor=float(.8))
+history=vgg16model.fit(
+    pvx_train,y_train,validation_data=(pvx_valid,y_valid), 
+    epochs=int(16),batch_size=int(64),verbose=int(2), 
+    callbacks=[checkpointer,lr_reduction])
+</script></div><br/>
+<div class='linked'><script type='text/x-sage'>
+keras_history_plot(history,9,'#348ABD')
+vgg16model.load_weights(fw)
+vgg16model.evaluate(pvx_test,y_test,verbose=int(0))
+</script></div><br/> 
+<p>VGG19</p>
+<div class='linked'><script type='text/x-sage'>
+from tensorflow.keras.applications.vgg19 import VGG19
+vgg19bmodel=VGG19(weights='imagenet',include_top=False)
+pvx_train=vgg19bmodel.predict(x_train)
+pvx_valid=vgg19bmodel.predict(x_valid)
+pvx_train=pvx_train.reshape(-int(1),int(1),int(1),pvx_train.shape[3])
+pvx_valid=pvx_valid.reshape(-int(1),int(1),int(1),pvx_valid.shape[3])
+pvx_test=vgg19bmodel.predict(x_test)
+pvx_test=pvx_test.reshape(-int(1),int(1),int(1),pvx_test.shape[3])
+</script></div><br/>
+<div class='linked'><script type='text/x-sage'>
+sh=pvx_train.shape[1:]
+def vgg19model():
+    model=tf.keras.Sequential()  
+    model.add(tkl.GlobalAveragePooling2D(input_shape=sh))   
+    model.add(tkl.Dense(int(1024)))
+    model.add(tkl.LeakyReLU(alpha=float(.02)))
+    model.add(tkl.Dropout(float(.25))) 
+    model.add(tkl.Dense(int(256)))
+    model.add(tkl.LeakyReLU(alpha=float(.02)))
+    model.add(tkl.Dropout(float(.25)))
+    model.add(tkl.Dense(int(33),activation='softmax'))    
+    model.compile(loss='sparse_categorical_crossentropy',
+                  optimizer='adam',metrics=['accuracy'])
+    return model
+vgg19model=vgg19model()
+</script></div><br/>
+<div class='linked'><script type='text/x-sage'>
+checkpointer=tkc.ModelCheckpoint(
+    filepath=fw,verbose=int(2),save_weights_only=True,
+    monitor='val_accuracy',mode='max',save_best_only=True)
+history=vgg19model.fit(
+    pvx_train,y_train,validation_data=(pvx_valid,y_valid), 
+    epochs=int(16),batch_size=int(64),
+    verbose=int(2),callbacks=[checkpointer])
+</script></div><br/>
+<div class='linked'><script type='text/x-sage'>
+keras_history_plot(history,9,'#348ABD')
+vgg19model.load_weights(fw)
+vgg19model.evaluate(pvx_test,y_test,verbose=int(0))
+</script></div><br/>
+  </body>
+</html>      

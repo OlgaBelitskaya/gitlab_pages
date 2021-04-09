@@ -1,0 +1,220 @@
+<!DOCTYPE HTML>
+<html>
+  <head>
+    <meta charset='utf-8'>
+    <meta name='viewport' content='width=device-width'>
+    <title>📑 Circus of Programming Tricks 01</title>
+    <script src='https://sagecell.sagemath.org/static/embedded_sagecell.js'></script>
+    <script>$(function() {
+        sagecell.makeSagecell({inputLocation:'div.trick',evalButtonText:'run'});
+        sagecell.makeSagecell({inputLocation:'div.linked',linked:true,evalButtonText:'run linked cells'}); });
+    </script>
+  </head>
+  <style>
+    @import 'https://fonts.googleapis.com/css?family=Akronim';
+    h1,h2,h3,h4 {color:darkmagenta; font-family:Akronim; text-shadow:4px 4px 4px #aaa; padding-left:20px;}
+    p,a {color:slategray; font-size:110%; text-shadow:4px 4px 4px #aaa; padding-left:20px;}
+    body {margin:5px 5px 5px 20px; background:whitesmoke; border:double slategray;}
+    .sagecell .CodeMirror-scroll {min-height:3em; max-height:90em;}
+  </style>
+  <body>
+    <div class='navbar'>
+    &nbsp; &nbsp; &nbsp; &nbsp;
+    <a href='https://olgabelitskaya.gitlab.io/index.html'>🌐 &nbsp; Homepage &nbsp; &nbsp;</a>
+    &nbsp; &nbsp; &nbsp; &nbsp;
+    <a href='https://olgabelitskaya.gitlab.io/circus/index.html'>🌐 &nbsp; Trick List</a>
+    &nbsp; &nbsp; &nbsp; &nbsp;
+    <a href='https://olgabelitskaya.github.io/README.html'>🌐 &nbsp; GitHub Pages &nbsp; &nbsp;</a>
+    &nbsp; &nbsp; &nbsp; &nbsp; 
+    <a href='https://www.instagram.com/olga.belitskaya/'>🌐 &nbsp; Instagram Posts &nbsp; &nbsp;</a> 
+    &nbsp; &nbsp; &nbsp; &nbsp;    
+    <a href='https://www.pinterest.ru/olga_belitskaya/code-style/'>🌐 &nbsp; Pinterest Posts</a>
+    </div><br/>
+    <h1>📑 Circus of Programming Tricks 01</h1>
+    <h2>#1 Coordinate Interpolation</h2>
+<div class='trick'><script type='text/x-sage'>
+import numpy as np; from skimage import io,transform
+file_path='https://olgabelitskaya.gitlab.io/images/'
+file1,file2='03_012.png','03_015.png'
+def preprocess_img(file1,file2,file_path=file_path):
+    img1,img2=io.imread(file_path+file1),io.imread(file_path+file2)
+    imgbw1,imgbw2=np.ones(img1.shape[:2]),np.ones(img2.shape[:2])
+    imgbw1[img1[:,:,1]<int(128)],imgbw2[img2[:,:,1]<int(127)]=0,0
+    coord1=np.array(np.where(imgbw1<1)).T; coord=coord1
+    coord2=np.array(np.where(imgbw2<1)).T
+    if coord1.shape[0]>coord2.shape[0]: coord1,coord2=coord2,coord
+    while not coord2.shape==coord1.shape:
+        randi=np.random.randint(
+            0,coord2.shape[0]-1,coord2.shape[0]-coord1.shape[0])
+        coord2=np.delete(coord2,list(randi),axis=0)
+    return coord1,coord2
+coord1,coord2=preprocess_img(file1,file2)
+def create_coords(coord1,coord2):
+    coords=[]
+    for el in [coord1,coord2]:
+        fx=el[:,0]; fy=el[:,1]
+        fx=.025+.95*(fx-fx.min())/(fx.max()-fx.min())
+        fy=.025+.95*(fy-fy.min())/(fy.max()-fy.min())
+        el=np.array([[fx[i],fy[i]] for i in range(len(fx))])
+        coords.append(el)
+    return np.array(coords)
+coords=create_coords(coord1,coord2)
+steps=20; img_size_out=256
+def interpolate_hypersphere(v1,v2,steps):
+    v1norm=np.linalg.norm(v1); v2norm=np.linalg.norm(v2)
+    vectors=[]; v2normalized=v2*(v1norm/v2norm)
+    for step in range(steps):
+        interpolated=v1+(v2normalized-v1)*step/(steps-int(1))
+        interpolated_norm=np.linalg.norm(interpolated)
+        interpolated_normalized=interpolated*(v1norm/interpolated_norm)
+        vectors.append(interpolated_normalized)
+    return np.array(vectors)
+coords_int=np.vstack([interpolate_hypersphere(coords[1],coords[0],steps),
+                      interpolate_hypersphere(coords[0],coords[1],steps)])
+def create_images(coords_int,img_size_out,img_size=2048):
+    imgs=[]
+    for i in range(coords_int.shape[0]):
+        fx=coords_int[i,:,0]; fy=coords_int[i,:,1]
+        fx=np.array(np.clip(fx*img_size,0,img_size-1),dtype='int32')
+        fy=np.array(np.clip(fy*img_size,0,img_size-1),dtype='int32')
+        f=np.array([[fx[i],fy[i]] for i in range(len(fx))])
+        img=np.zeros((img_size,img_size))
+        for [x,y] in f: img[x,y]=1
+        imgs.append(transform.resize(img,(img_size_out,img_size_out)))
+    return np.array(imgs)
+imgs=create_images(coords_int,img_size_out)
+def mplot(imgs,i,fig_size=3):
+    return matrix_plot(imgs[i],figsize=(fig_size,fig_size),frame=False) 
+for i in [0,steps]: mplot(imgs,i).show()
+animate([mplot(imgs,i) for i in range(2*steps)])
+</script></div><br/>
+    <h2>#2 Super Resolution</h2>
+<div class='linked'><script type='text/x-sage'>
+!python3 -m pip install tensorflow_hub --user --quiet --no-warn-script-location
+path='/home/sc_work/.sage/local/lib/python3.8/site-packages'
+import sys,os,h5py,urllib,warnings
+sys.path.append(path); warnings.filterwarnings('ignore')
+import numpy as np,tensorflow as tf,tensorflow_hub as hub
+super_hub_path='https://tfhub.dev/captain-pool/esrgan-tf2/1'
+os.environ['TFHUB_MODEL_LOAD_FORMAT']='COMPRESSED'
+file_path='https://raw.githubusercontent.com/OlgaBelitskaya/data_kitchen/main/'
+file_name='Pictograms64.h5'
+img_size=int(64); lr_size=int(50)
+super_model=hub.load(super_hub_path)
+func=super_model.signatures[tf.saved_model.DEFAULT_SERVING_SIGNATURE_DEF_KEY]
+func.inputs[0].set_shape([1,lr_size,lr_size,3])
+converter=tf.lite.TFLiteConverter.from_concrete_functions([func])
+converter.optimizations=[tf.lite.Optimize.DEFAULT]
+tflite_super_model=converter.convert()
+with tf.io.gfile.GFile('ESRGAN.tflite','wb') as f: 
+    f.write(tflite_super_model)
+esrgan_model_path='./ESRGAN.tflite'
+</script></div><br/>
+<div class='linked'><script type='text/x-sage'>
+input_file=urllib.request.urlopen(file_path+file_name)
+output_file=open(file_name,'wb'); output_file.write(input_file.read())
+output_file.close(); input_file.close()
+with h5py.File(file_name,'r') as f:
+    keys=list(f.keys())
+    images=np.array(f[keys[int(0)]]); labels=np.array(f[keys[int(1)]])
+    names=[[el.decode('utf-8') for el in f[keys[i]]] 
+           for i in range(int(2),len(keys))]
+    f.close(); os.remove(file_name)
+N=images.shape[0]; shuffle_ids=np.arange(N)
+np.random.RandomState(12).shuffle(shuffle_ids)
+images=images[shuffle_ids]
+labels=np.array([labels[i][shuffle_ids] for i in range(labels.shape[int(0)])])
+@interact(layout=dict(
+    top=[['original_type','original_object']]))
+def _pictograms(original_type=selector(names[0],default='pictogram'),
+                original_object=selector(names[1],default='bird')):
+    global names,images,labels,esrgan_model_path,lr_size
+    original_names=[names[0].index(original_type),names[1].index(original_object)]
+    original_cond=np.intersect1d(
+        np.where(labels[0]==original_names[0]),np.where(labels[1]==original_names[1]))
+    original_images=images[original_cond]; original_len=original_images.shape[0]
+    original_img=original_images[randint(0,original_len-1)]
+    lr=tf.image.resize(original_img,[lr_size,lr_size])
+    lr=tf.expand_dims(lr.numpy()[:,:,:int(3)],axis=int(0))
+    lr=tf.cast(lr*int(255),tf.float32)
+    interpreter=tf.lite.Interpreter(model_path=esrgan_model_path)
+    interpreter.allocate_tensors()
+    input_details=interpreter.get_input_details()
+    output_details=interpreter.get_output_details()
+    interpreter.set_tensor(input_details[int(0)]['index'],lr)
+    interpreter.invoke()
+    output_data=interpreter.get_tensor(output_details[0]['index'])
+    sr=tf.squeeze(output_data,axis=int(0))
+    sr=tf.clip_by_value(sr,int(0),int(255))
+    sr=tf.cast(tf.round(sr),tf.uint8)
+    lr=tf.cast(tf.squeeze(lr,axis=int(0)),tf.uint8)
+    print('original 64x64 '+12*'=>'+' lower resolution 50x50 '+\
+          12*'=>'+' higher resolution 200x200\n')
+    for img in [original_img,lr/int(255),sr/int(255)]: 
+        matrix_plot(img,frame=True,figsize=4).show()
+</script></div><br/>
+    <h2>#3 Fun Horoscope</h2>
+<div class='trick'><script type='text/x-sage'>
+el=['😀','😁','😂','😃','😄','😅','😆','😇','😈','😉','😊',
+    '😋','😌','😍','😎','😏','😐','😑','😒','😓','😔','😕',
+    '😖','😗','😘','😙','😚','😛','😜','😝','😞','😟','😠',
+    '😡','😢','😣','😥','😦','😧','😨','😩','😪','😫','😭',
+    '😮','😯','😰','😱','😲','😳','😴','😵','😶','😷']
+script_str="""<script>
+var idc=setInterval(function() {
+    var iddoc=document.getElementById('colored_font');
+    var now=new Date().getTime();
+    var t=Math.floor((now%(1000*60))/1000);
+    var col='rgb('+(5+Math.abs(245-8*t))+',0,'+(250-Math.abs(245-8*t))+')';
+    iddoc.style.color=col;}, 1000);</"""+"""script>"""
+head_str="""<h1 id='colored_font' style='padding-left:120px;'>"""
+head_str+="""Emotional Horoscope for the Day</"""+"""h1>"""
+display(html(script_str+head_str))
+var('t,k'); n=randint(12,24)
+a,b,c=randint(4,7),randint(8,24),2*randint(3,10)
+fy(t,k)=cos(pi*t/n+2*k*pi/c)+cos(a*pi*t/n+2*k*pi/c)+cos(b*pi*t/n+2*k*pi/c)
+fx(t,k)=sin(pi*t/n+2*k*pi/c)-sin(a*pi*t/n+2*k*pi/c)+sin(b*pi*t/n+2*k*pi/c)
+L=[[[fx(t,k),fy(t,k)] for t in range(2*n)] for k in range(2*c)]
+EL=[(3.2*cos(j*pi/12),3.2*sin(j*pi/12)) for j in [1..24]]
+def col(): return (random(),0,random())
+def poly(i): return polygon2d(L[i],color=col(),thickness=.7,alpha=.05)
+EP1=sum([poly(i) for i in range(2*c)])
+EP2=sum([text(el[randint(0,len(el)-1)]+str(31-j),
+              EL[j-2],fontsize=20,color=col()) for j in [7..24]])
+EP3=text(el[randint(0,len(el)-1)],(0,0),fontsize=70,color='white')
+(EP1+EP2+EP3).show(axes=False,figsize=(6,6))
+</script></div><br/>
+    <h2>#4 Animated Graphs</h2>
+<div class='trick'><script type='text/x-sage'>
+from sage.plot.animate import Animation
+class MyAnimation(Animation):
+    def make_image(self,frame,filename,**kwds):
+        G=frame.plot()
+        G.set_axes_range(floor(G.xmin()),ceil(G.xmax()),
+                         floor(G.ymin()),ceil(G.ymax()))
+        G.save_image(filename,**kwds)
+def rotate_line(a,l): 
+    return [[(cos(a)*x-sin(a)*y).n(),(sin(a)*x+cos(a)*y).n()] 
+            for [x,y] in l]
+def linegraph(g):
+    vg=g.get_pos(); eg=g.edges(); ne=len(eg)
+    return [[list(vg[eg[i][0]]),list(vg[eg[i][1]])] 
+            for i in range(ne)]  
+def col(): return (.3+random()/3,0,.3+random()/3)
+def rotate_bezier_path_cubegraph(m,k,color='default',th=.5):
+    g=graphs.CubeGraph(m) 
+    lg=linegraph(g); LG=Graphics()
+    rlg=[[rotate_line(j*pi/k,lg[i]) 
+          for i in range(len(lg))] for j in range(2*k)] 
+    for i in range(2*k): 
+        if color=='default': color=col()
+        LG+=bezier_path(rlg[i],color=color,thickness=th)
+    return LG
+@interact
+def _(m1=[3,4,5,6],m2=[3,4,5,6],th1=[.5,.7,.9,1.1],th2=[.3,.7,1.1,1.5]):
+    MyAnimation([sum([rotate_bezier_path_cubegraph(m1,k,th=th1),
+                      rotate_bezier_path_cubegraph(m2,k,color='white',th=th2)]) 
+                 for k in range(3,9)],figsize=(5,5),axes=False).show()
+</script></div><br/>
+  </body>
+</html>

@@ -1,0 +1,160 @@
+<!DOCTYPE HTML>
+<html>
+  <head>
+    <meta charset='utf-8'>
+    <meta name='viewport' content='width=device-width'>
+    <title>📑 TensorFlow Workout 02</title>
+    <script src='https://sagecell.sagemath.org/static/embedded_sagecell.js'></script>
+    <script>$(function() {sagecell.makeSagecell({inputLocation:'div.linked',linked:true,evalButtonText:'run'});});
+    </script>
+  </head>
+  <style>
+    @import 'https://fonts.googleapis.com/css?family=Akronim';
+    h1,h2,h3,h4 {color:darkorange; font-family:Akronim; text-shadow:4px 4px 4px #aaa; padding-left:20px;}
+    p,a {color:slategray; font-size:110%; text-shadow:4px 4px 4px #aaa; padding-left:20px;}
+    body {margin:5px 5px 5px 20px; background:whitesmoke; border:double slategray;}
+    .sagecell .CodeMirror-scroll {min-height:3em; max-height:90em;}
+  </style>
+  <body>
+    <div class='navbar'>
+    &nbsp; &nbsp; &nbsp; &nbsp;
+    <a href='https://olgabelitskaya.gitlab.io/index.html'>🌐 &nbsp; Homepage &nbsp; &nbsp;</a>
+    &nbsp; &nbsp; &nbsp; &nbsp;
+    <a href='https://olgabelitskaya.gitlab.io/workout/index.html'>🌐 &nbsp; Workout List</a>
+    &nbsp; &nbsp; &nbsp; &nbsp;
+    <a href='https://olgabelitskaya.github.io/README.html'>🌐 &nbsp; GitHub Pages &nbsp; &nbsp;</a>
+    &nbsp; &nbsp; &nbsp; &nbsp; 
+    <a href='https://www.instagram.com/olga.belitskaya/'>🌐 &nbsp; Instagram Posts &nbsp; &nbsp;</a> 
+    &nbsp; &nbsp; &nbsp; &nbsp;    
+    <a href='https://www.pinterest.ru/olga_belitskaya/code-style/'>🌐 &nbsp; Pinterest Posts</a>
+    </div><br/>
+    <h1>📑 TensorFlow Workout 02</h1>
+    <h2>Code Modules</h2>
+<div class='linked'><script type='text/x-sage'>
+!python3 -m pip install tensorflow_hub --user --quiet --no-warn-script-location
+spath='/home/sc_work/.sage/local/lib/python3.8/site-packages'
+import sys,warnings; sys.path.append(spath); warnings.filterwarnings('ignore')
+import tensorflow_hub as th,tensorflow as tf
+import numpy as np,pandas as pd,pylab as pl,h5py,urllib
+</script></div><br/>
+   <h2>Functions</h2>
+<div class='linked'><script type='text/x-sage'>
+def interpolate_hypersphere(v1,v2,steps=int(60)):
+    v1norm=tf.norm(v1); v2norm=tf.norm(v2); vectors=[]
+    v2normalized=v2*(v1norm/v2norm)
+    for step in range(steps):
+        interpolated=v1+(v2normalized-v1)*step/(steps-int(1))
+        interpolated_norm=tf.norm(interpolated)
+        interpolated_normalized=interpolated*(v1norm/interpolated_norm)
+        vectors.append(interpolated_normalized)
+    return tf.stack(vectors).numpy()
+def load_img(img_file,max_dim=int(512)):
+    img=tf.io.read_file(img_file)
+    img=tf.image.decode_image(img,channels=int(3))
+    img=tf.image.convert_image_dtype(img,tf.float32)
+    shape=tf.cast(tf.shape(img)[:-int(1)],tf.float32)
+    scale=max_dim/max(shape)
+    new_shape=tf.cast(shape*scale,tf.int32)
+    img=tf.image.resize(img,new_shape)
+    return img[tf.newaxis,:]
+def tensor_to_image(tensor):
+    if np.ndim(tensor)>int(3):
+        assert tensor.shape[int(0)]==int(1)
+        tensor=tensor[int(0)]
+    return matrix_plot(tensor,frame=False).show()
+</script></div><br/>
+    <h2>Image Data & Interpolation</h2>
+<div class='linked'><script type='text/x-sage'>
+path='https://raw.githubusercontent.com/OlgaBelitskaya/data_kitchen/main/'
+zf='HorseBreeds160.h5'; input_file=urllib.request.urlopen(path+zf)
+output_file=open(zf,'wb'); output_file.write(input_file.read())
+output_file.close(); input_file.close()
+with h5py.File(zf,'r') as f:
+    keys=list(f.keys())
+    pretty_print(html(
+        '<style>p:hover {color:darkorange}</style>'+\
+        '<p>file keys: '+', '.join(keys)+'</p>'))
+    images=np.array(f[keys[0]]); labels=np.array(f[keys[1]])
+    names=[el.decode('utf-8')for el in f[keys[2]]]
+    f.close()
+N=labels.shape[0]; n=int(.1*N); shuffle_ids=np.arange(N)
+np.random.RandomState(123).shuffle(shuffle_ids)
+images=images[shuffle_ids]; labels=labels[shuffle_ids]
+x_test,x_valid,x_train=images[:n],images[n:2*n],images[2*n:]
+y_test,y_valid,y_train=labels[:n],labels[n:2*n],labels[2*n:]
+df=pd.DataFrame(
+    [[x_train.shape,x_valid.shape,x_test.shape],
+     [x_train.dtype,x_valid.dtype,x_test.dtype],
+     [y_train.shape,y_valid.shape,y_test.shape],
+     [y_train.dtype,y_valid.dtype,y_test.dtype]],
+    columns=['train','valid','test'],
+    index=['image shape','image type','label shape','label type'])
+display(df)
+imgs=np.vstack([interpolate_hypersphere(x_train[0],x_train[1]),
+                interpolate_hypersphere(x_train[1],x_train[0])])
+animate([matrix_plot(imgs[i],figsize=(3,3),frame=False) for i in range(120)])
+</script></div><br/>
+    <h2>Image Data & Styling</h2>
+<div class='linked'><script type='text/x-sage'>
+hub_path='https://tfhub.dev/google/magenta/arbitrary-image-stylization-v1-256/1'
+img_path='https://raw.githubusercontent.com/OlgaBelitskaya/data/main/'
+folder_path=['flowers/','patterns/','urban/']
+img_file=['12_001.png','00_00_001.png','01_00_001.png']
+for i in range(3):
+    input_file=urllib.request.urlopen(img_path+folder_path[i]+img_file[i])
+    output_file=open(img_file[i],'wb'); output_file.write(input_file.read())
+    output_file.close(); input_file.close()
+hub_module=th.load(hub_path)  
+original_img=load_img(img_file[0])
+style_img=load_img(img_file[1])
+stylized_img=hub_module(
+    tf.constant(original_img),tf.constant(style_img))[int(0)]
+tensor_to_image(stylized_img)
+</script></div><br/>
+    <h2>Image Data & Object Recognition</h2>
+<div class='linked'><script type='text/x-sage'>
+from tensorflow.keras.applications import vgg19,VGG19
+content_img=load_img(img_file[2])
+x=vgg19.preprocess_input(content_img*(int(255)))
+x=tf.image.resize(x,(int(224),int(224)))
+mvgg19=VGG19(include_top=True,weights='imagenet')
+prediction_probabilities=mvgg19(x)
+predicted_top5=vgg19.decode_predictions(
+    prediction_probabilities.numpy())[int(0)]
+tensor_to_image(content_img)
+table([[class_name,prob] 
+       for (number,class_name,prob) in predicted_top5])
+</script></div><br/>
+    <h2>Artificial Data & Interpolation</h2>
+<div class='linked'><script type='text/x-sage'>
+def randi(nmin,nmax): return np.random.randint(nmin,nmax)
+def randch(a): return np.random.choice(a,1)[0]
+def randcoef():
+    a=(.5+.1**6*randi(1,999999))*randch([-1,1])
+    b=randi(3,12)
+    c=.001*randi(1,99)*randch([-1,1])
+    return a,b,c
+def randcoord(a,b,c):
+    t=np.arange(0,36*np.pi,1/3600)
+    fx=np.sin(t/6)+a*np.sin(b*t)*np.cos(t)-c*np.sin(16*b*t)
+    fy=np.cos(t/6)+a*np.sin(b*t)*np.sin(t)-c*np.cos(16*b*t)
+    return fx,fy
+def randcol(): return [np.random.random(3)]
+def randplot(idx,fig_size):
+    a,b,c=randcoef(); fx,fy=randcoord(a,b,c)
+    pl.figure(figsize=(fig_size,fig_size))
+    pl.scatter(fx,fy,s=.1**4,c=randcol())
+    pl.axis('off'); pl.tight_layout(pad=.05)
+    fn='%03d'%idx+'.png'
+    pl.savefig(fn); pl.close();
+    img=tf.io.read_file(fn)
+    img=tf.image.decode_image(img,channels=int(3))
+    img=tf.image.convert_image_dtype(img,tf.float32)
+    return img
+img1=randplot(1,4); img2=randplot(2,4)
+imgs=np.vstack([interpolate_hypersphere(img1,img2),
+                interpolate_hypersphere(img2,img1)])
+animate([matrix_plot(imgs[i],figsize=(3,3),frame=False) for i in range(120)])
+</script></div><br/>
+  </body>
+</html>

@@ -1,0 +1,203 @@
+<!DOCTYPE HTML>
+<html>
+  <head>
+    <meta charset='utf-8'>
+    <meta name='viewport' content='width=device-width'>
+    <title>🏙 DL PP4_2 SMC</title>
+    <script src='https://sagecell.sagemath.org/static/embedded_sagecell.js'></script>
+    <script>$(function(){
+      sagecell.makeSagecell(
+        {inputLocation:'div.linked',linked:true,evalButtonText:'run linked cells'}); });
+    </script>
+  </head>
+  <style>
+    @import 'https://fonts.googleapis.com/css?family=Akronim|Lobster';
+    h1,h2,th {color:#348ABD; font-family:Akronim; font-size:120%; text-shadow:4px 4px 4px #aaa;}
+    p,a {color:slategray; font-family:Lobster; font-size:120%; text-shadow:4px 4px 4px #aaa;}
+    .sagecell .CodeMirror-scroll {min-height:3em; max-height:70em;}
+    body {margin:5px 5px 5px 15px;}
+  </style>
+  <body>
+    <h1>📑 &nbsp; Deep Learning. Practice Project 4_2: TensorFlow Lite</h1>
+Perfect and complete explanation =>
+<a href='https://github.com/naokishibuya/deep-learning/blob/master/python/artistic_style_transfer.ipynb'>
+&#x1F300; &nbsp;  &nbsp; Artistic Style Transfer by Naoki Shibuya &nbsp; &nbsp;</a><br>  
+<a href='https://olgabelitskaya.gitlab.io/index.html'>&#x1F300; &nbsp; Homepage &nbsp; &nbsp;</a>
+<a href='https://olgabelitskaya.gitlab.io/deep_learning_projects/index.html'>
+&#x1F300; &nbsp; Project List &nbsp; &nbsp;</a>
+<a href='https://olgabelitskaya.github.io/README.html'>&#x1F300; &nbsp; GitHub Pages &nbsp; &nbsp;</a>
+<a href='https://olgabelitskaya.gitlab.io/deep_learning_projects/DL_PP3_0_SMC.html'>
+&#x1F300; &nbsp; Previous &nbsp; &nbsp;</a>
+<a href='https://olgabelitskaya.gitlab.io/deep_learning_projects/DL_PP4_0_SMC.html'>
+&#x1F300; &nbsp; Main &nbsp; &nbsp;</a>
+<a href='https://olgabelitskaya.gitlab.io/deep_learning_projects/DL_PP5_0_SMC.html'>
+&#x1F300; &nbsp; Next &nbsp; &nbsp;</a><br/>
+<a href='https://www.instagram.com/olga.belitskaya/'>&#x1F300; &nbsp; Instagram Posts &nbsp; &nbsp;</a>
+<a href='https://www.pinterest.ru/olga_belitskaya/code-style/'>&#x1F300; &nbsp; Pinterest Posts</a><br/>
+    <h2>✒️ &nbsp; Libraries</h2>  
+<div class='linked'><script type='text/x-sage'>
+!python3 -m pip install --upgrade tensorflow_hub \
+--user --quiet --no-warn-script-location
+path='/home/sc_work/.sage/local/lib/python3.8/site-packages'
+import sys; sys.path.append(path)
+import warnings; warnings.filterwarnings('ignore')
+import tensorflow as tf,tensorflow_hub as hub
+import numpy as np,pylab as pl,PIL.Image
+file_path='https://raw.githubusercontent.com/OlgaBelitskaya/data/main/'
+from IPython.display import HTML
+HTML('<style>.sagecell_input {text-shadow:4px 4px 4px #aaa;}</style>')
+</script></div><br/>
+    <h2>✒️ &nbsp; Helpful Functions</h2> 
+<div class='linked'><script type='text/x-sage'>
+def display_images(original_img,style_img):    
+    fig=pl.figure(figsize=(8,4))
+    ax=fig.add_subplot(121)
+    str1='Shape of the original image: %s'
+    pl.title(str1%str(original_img.shape),fontsize=int(8))
+    ax.imshow(np.squeeze(original_img))
+    ax=fig.add_subplot(122)
+    str2='Shape of the style image: %s'
+    pl.title(str2%str(style_img.shape),fontsize=int(8))
+    ax.imshow(np.squeeze(style_img))
+    pl.tight_layout(); pl.show()
+def load_img(path_to_img):
+    img=tf.io.read_file(path_to_img)
+    img=tf.image.decode_image(img,channels=3)
+    img=tf.image.convert_image_dtype(img,tf.float32)
+    shape=tf.cast(tf.shape(img)[:-int(1)],tf.float32)
+    return img[tf.newaxis,:]
+def preprocess_img(img,img_size):
+    shape=tf.cast(tf.shape(img)[int(1):-int(1)],tf.float32)
+    new_shape=tf.cast(shape*img_size/min(shape),tf.int32)
+    img=tf.image.resize(img,new_shape)
+    img=tf.keras.preprocessing.image.smart_resize(
+        np.squeeze(img),(img_size,img_size))
+    return img[tf.newaxis,:]
+def tensor2img(tensor):
+    tensor=tensor*int(255)
+    tensor=np.array(tensor,dtype=np.uint8)
+    if np.ndim(tensor)>3:
+        assert tensor.shape[int(0)]==1
+        tensor=tensor[int(0)]
+    return PIL.Image.fromarray(tensor)
+</script></div><br/>
+    <h2>✒️ &nbsp; Image Data for Mixed Styles</h2> 
+<div class='linked'><script type='text/x-sage'>
+original,style='02_00_001.png','01_00_001.png'
+original=tf.keras.utils.get_file(original,file_path+'seasons/'+original)
+style=tf.keras.utils.get_file(style,file_path+'paintings/'+style)
+original_img=load_img(original)
+style_img=load_img(style)
+prepro_original_img=preprocess_img(original_img,int(384))
+prepro_style_img=preprocess_img(style_img,int(256))
+display_images(prepro_original_img,prepro_style_img)
+</script></div><br/>
+    <h2>✒️ &nbsp; Pre-Trained Lite Models</h2>
+<div class='linked'><script type='text/x-sage'>
+style_predict_path=tf.keras.utils.get_file(
+    'style_predict.tflite',
+    'https://tfhub.dev/google/lite-model/magenta/'+\
+    'arbitrary-image-stylization-v1-256/'+\
+    'int8/prediction/1?lite-format=tflite')
+style_transform_path=tf.keras.utils.get_file(
+    'style_transform.tflite',
+    'https://tfhub.dev/google/lite-model/magenta/'+\
+    'arbitrary-image-stylization-v1-256/'+\
+    'int8/transfer/1?lite-format=tflite')
+</script></div><br/>    
+<div class='linked'><script type='text/x-sage'>
+def style_predict(prepro_style_img):
+    interpreter=tf.lite.Interpreter(
+        model_path=style_predict_path)
+    interpreter.allocate_tensors()
+    input_details=interpreter.get_input_details()
+    interpreter.set_tensor(
+        input_details[0]['index'],prepro_style_img)
+    interpreter.invoke()
+    style_bottleneck=interpreter.tensor(
+        interpreter.get_output_details()[0]['index'])()
+    return style_bottleneck
+style_bottleneck=style_predict(prepro_style_img)
+print('Style Bottleneck Shape:',style_bottleneck.shape)
+</script></div><br/>
+<div class='linked'><script type='text/x-sage'>
+def style_transform(style_bottleneck,prepro_original_img):
+    interpreter=tf.lite.Interpreter(
+        model_path=style_transform_path)
+    input_details=interpreter.get_input_details()
+    interpreter.allocate_tensors()
+    interpreter.set_tensor(
+        input_details[0]['index'],prepro_original_img)
+    interpreter.set_tensor(
+        input_details[1]['index'],style_bottleneck)
+    interpreter.invoke()
+    stylized_img=interpreter.tensor(
+        interpreter.get_output_details()[0]['index'])()
+    return stylized_img
+stylized_img=style_transform(
+    style_bottleneck,prepro_original_img)
+tensor2img(stylized_img)
+</script></div><br/>
+    <h2>✒️ &nbsp; Style Blending</h2>
+<div class='linked'><script type='text/x-sage'>
+style_bottleneck_original=style_predict(
+    preprocess_img(original_img,int(256)))
+original_blending_ratio=float(.5)
+style_bottleneck_blended=\
+original_blending_ratio*style_bottleneck_original+\
+(1-original_blending_ratio)*style_bottleneck
+stylized_img_blended=style_transform(
+    style_bottleneck_blended,prepro_original_img)
+tensor2img(stylized_img_blended)
+</script></div><br/>
+    <h2>✒️ &nbsp; Image Data for Super Resolution</h2> 
+<div class='linked'><script type='text/x-sage'>
+img_path=file_path+'pictograms/00_02_012.png'
+img_path=tf.keras.utils.get_file('00_02_012.png',img_path)
+</script></div><br/>
+    <h2>✒️ &nbsp; Model Loading</h2> 
+<div class='linked'><script type='text/x-sage'>
+model=hub.load('https://tfhub.dev/captain-pool/esrgan-tf2/1')
+func=model.signatures[tf.saved_model.DEFAULT_SERVING_SIGNATURE_DEF_KEY]
+func.inputs[0].set_shape([1,50,50,3])
+converter=tf.lite.TFLiteConverter.from_concrete_functions([func])
+converter.optimizations=[tf.lite.Optimize.DEFAULT]
+tflite_model=converter.convert()
+with tf.io.gfile.GFile('ESRGAN.tflite','wb') as f:
+    f.write(tflite_model)
+esrgan_model_path='./ESRGAN.tflite'
+</script></div><br/>
+    <h2>✒️ &nbsp; ESRGAN Interpreter</h2>
+<div class='linked'><script type='text/x-sage'>
+lr=tf.io.read_file(img_path)
+lr=tf.image.decode_jpeg(lr)
+lr=tf.image.resize(lr,[int(50),int(50)])
+lr=tf.expand_dims(lr.numpy()[:,:,:int(3)],axis=int(0))
+lr=tf.cast(lr,tf.float32)
+interpreter=tf.lite.Interpreter(model_path=esrgan_model_path)
+interpreter.allocate_tensors()
+input_details=interpreter.get_input_details()
+output_details=interpreter.get_output_details()
+interpreter.set_tensor(input_details[int(0)]['index'],lr)
+interpreter.invoke()
+output_data=interpreter.get_tensor(output_details[0]['index'])
+sr=tf.squeeze(output_data,axis=int(0))
+sr=tf.clip_by_value(sr,int(0),int(255))
+sr=tf.round(sr); sr=tf.cast(sr,tf.uint8)
+lr=tf.cast(tf.squeeze(lr,axis=int(0)),tf.uint8)
+</script></div><br/>
+<div class='linked'><script type='text/x-sage'>
+pl.figure(figsize=(8,4));pl.title('LR')
+pl.imshow(lr.numpy()); pl.show(); print()
+pl.figure(figsize=(8,4))
+pl.subplot(1,2,1); pl.title(f'ESRGAN (x4)')
+pl.imshow(sr.numpy());
+bicubic=tf.image.resize(
+    lr,[int(200),int(200)],tf.image.ResizeMethod.BICUBIC)
+bicubic=tf.cast(bicubic, tf.uint8)
+pl.subplot(1,2,2); pl.title('Bicubic')
+pl.imshow(bicubic.numpy())
+pl.tight_layout(); pl.show()
+</script></div><br/> 
+  </body>
+</html>

@@ -1,0 +1,181 @@
+<!DOCTYPE HTML>
+<html>
+  <head>
+    <meta charset='utf-8'>
+    <meta name='viewport' content='width=device-width'>
+    <title>📑 Style Workout 01</title>
+    <script src='https://sagecell.sagemath.org/static/embedded_sagecell.js'></script>
+    <script>$(function() {sagecell.makeSagecell({inputLocation:'div.sagehtml',evalButtonText:'run'}); });
+    </script>
+    <script src='https://d3js.org/d3.v6.min.js'></script>
+  </head>
+  <style>
+  @import 'https://fonts.googleapis.com/css?family=Akronim';
+  h1,h2,h3,h4 {color:darkorchid; font-family:Akronim; text-shadow:4px 4px 4px #aaa; padding-left:20px;}
+  p,a {color:slategray; font-size:110%; text-shadow:4px 4px 4px #aaa; padding-left:20px;}
+  body {margin:5px 5px 5px 20px; background:whitesmoke; border:double slategray;}
+  .sagecell .CodeMirror-scroll {min-height:3em; max-height:90em;}
+  </style>
+  <body>
+    <div class='navbar'>
+    &nbsp; &nbsp; &nbsp; &nbsp;
+    <a href='https://olgabelitskaya.gitlab.io/index.html'>🌐 &nbsp; Homepage &nbsp; &nbsp;</a>
+    &nbsp; &nbsp; &nbsp; &nbsp;
+    <a href='https://olgabelitskaya.gitlab.io/workout/index.html'>🌐 &nbsp; Workout List</a>
+    &nbsp; &nbsp; &nbsp; &nbsp;
+    <a href='https://olgabelitskaya.github.io/README.html'>🌐 &nbsp; GitHub Pages &nbsp; &nbsp;</a>
+    &nbsp; &nbsp; &nbsp; &nbsp; 
+    <a href='https://www.instagram.com/olga.belitskaya/'>🌐 &nbsp; Instagram Posts &nbsp; &nbsp;</a> 
+    &nbsp; &nbsp; &nbsp; &nbsp;    
+    <a href='https://www.pinterest.ru/olga_belitskaya/code-style/'>🌐 &nbsp; Pinterest Posts</a>
+    </div><br/>
+    <h1>📑 Style Workout 01</h1>
+    <h2>radial-gradient & webkit-background-clip</h2>
+<div class='sagehtml'><script type='text/x-sage'>
+%%html
+<style>
+@import 'https://fonts.googleapis.com/css?family=Ewert';
+#d302h01 {background:white; text-align:center; padding:2px;}
+.h1rg {display:inline-block; font-size:35px; line-height:1.1;
+       padding:10px; font-family:'Ewert',sans-serif;
+       text-transform:uppercase;
+       background:radial-gradient(
+           circle farthest-corner at center center,
+           orange,magenta,cyan) no-repeat;
+       -webkit-background-clip:text;
+       -webkit-text-fill-color:transparent;}
+</style>
+<div id='d302h01'><h1 class='h1rg'>
+Dawn comes to those who have seen the darkness 
+in all its mysterious majesty...</h1></div>
+</script></div><br/>
+    <h2>d3 color interpolation</h2>
+<p>&#60;script src='https://d3js.org/d3.v6.min.js'>&#60;/script> was added in the page head.</p>
+<div class='sagehtml'><script type='text/x-sage'>
+%%html
+<style>
+@import 'https://fonts.googleapis.com/css?family=Akronim';
+.gakronim {font-family:Akronim; color:white; text-align:center;}
+#canvas001,#canvas002 {width:10%; vertical-align:middle;}
+</style>
+<h1 id='colorized1' class='gakronim'>
+Color Interpolation in Text Displaying</h1>
+<h1 id='colorized2' class='gakronim'>
+Background Interpolation in Text Displaying</h1>
+<h1 id='colorized3' class='gakronim'>
+<canvas id='canvas001'></canvas>
+Canvas Drawing in Headers
+<canvas id='canvas002'></canvas></h1><br/>
+<script>
+var tc=setInterval(function() {
+    var now=new Date().getTime();
+    var iddoc1=document.getElementById('colorized1');
+    var iddoc2=document.getElementById('colorized2');
+    var iddoc3=document.getElementById('colorized3');
+    iddoc1.style.color=d3.interpolateSinebow(now/60000);
+    iddoc2.style.background=d3.interpolateSinebow(now/60000);
+    iddoc3.style.color=d3.interpolateRainbow(now/1000);
+    var r=10,n=7;
+    var c1=document.getElementById('canvas001'); 
+    var context1=c1.getContext('2d');
+    var c2=document.getElementById('canvas002'); 
+    var context2=c2.getContext('2d');
+    c1.style.background=d3.interpolateSinebow(now/60000); 
+    c2.style.background=d3.interpolateSinebow(now/60000);
+    context1.strokeStyle=d3.interpolateRainbow(now/1000);    
+    context2.strokeStyle=d3.interpolateRainbow(now/1000);
+    for (var i=1; i<n; i++) {
+        context1.beginPath(); context2.beginPath();
+        for (var j=0; j<6; j++) {
+            context1.arc(60*j,r*(n+.5),i*r,0,2*Math.PI);
+            context2.arc(60*j,r*(n+.5),i*r,0,2*Math.PI); };
+        context1.stroke(); context2.stroke(); }; },1)
+</script></div><br/>
+    <h2>inputs & outputs</h2>
+<div class='sagehtml'><script type='text/x-sage'>
+%%html
+<style>
+@import 'https://fonts.googleapis.com/css?family=Akronim';
+.sagecell_output {width:90%; background:ghostwhite; border:2px double slategray; padding:50px;}
+.sagecell_input {width:90%; background:lavender; border:2px double slategray; padding:50px;
+                 text-shadow:2px 2px 2px #aaa;}
+#d302h02 {font-size:200%; font-family:Akronim; color:slategray; text-align:center;
+       border:2px double slategray;}
+</style>
+<div id='d302h02'><text>😋 😌 😍 😎 😏  formatting of SageMathCell inputs & outputs</text></div>
+</script></div><br/>
+    <h2>creating js pretty_print</h2>
+<div class='sagehtml'><script type='text/x-sage'>
+from IPython.display import display,HTML,Javascript
+def js_pretty_print(string,font_size,div_width=99):
+    js_str="""
+var out1=document.querySelector('#d302h03'),
+    text1=document.createElement('text'),
+    str1='"""+string+"""';
+text1.appendChild(document.createTextNode(str1));
+out1.appendChild(text1); out1.style.border='double'; 
+out1.style.width='"""+str(div_width)+"""%';
+text1.id='text001'; text1.style.padding='20px'; 
+var tc=setInterval(function() {
+  var doc=document.getElementById('text001');
+  var sec=Math.floor(new Date().getTime()%60000/1000);
+  var col='rgb(0,'+(5+Math.abs(245-8*sec))+','+
+          (250-Math.abs(245-8*sec))+')';
+  doc.style.color=col;}, 1000);  """
+    display(HTML("""<style>
+    @import 'https://fonts.googleapis.com/css?family=Lobster';
+    </style><div id='d302h03' style='font-family:Lobster; 
+    font-size:"""+str(font_size)+"""px; 
+    height:"""+str(1.8*font_size)+"""px;'></div>"""))
+    display(Javascript(js_str))
+js_pretty_print('😋 😌 😍 😎 😏 HELLO',24,25)
+</script></div><br/>
+    <h2>js div_hide_display</h2>
+<div class='sagehtml'><script type='text/x-sage'>
+from IPython.display import HTML
+HTML("""<script>
+div_show=true; 
+function div_hide_display() {
+    if (div_show) {
+        $('#d302h04').each(function(id) {
+            if (id==0||$(this).html().indexOf('hide_display')>-1){$(this).hide();} });
+        $('#d302h04').css('opacity',0);} 
+    else {$('#d302h04').each(function(id){$(this).show();});
+          $('#d302h04').css('opacity',1);};
+    div_show=!div_show;} 
+$(document).ready(div_hide_display);
+</"""+"""script>
+<div id='d302h04' style='border:double slategray; width:24%;'>
+<p>😋 😌 😍 😎 😏 ===> HELLO</p><center>
+<img width='90%' src='https://olgabelitskaya.gitlab.io/data/flowers/00_001.png'></img>
+</center><p>HELLO <=== 😋 😌 😍 😎 😏</p></div>
+<form action='javascript:div_hide_display()'>
+<input style='color:slategray; background:silver; opacity:.7;'
+type='submit' value='click to display or hide div'></form>""")
+</script></div><br/>
+    <h2>_____</h2>
+<div class='sagehtml'><script type='text/x-sage'>
+%%html
+
+</script></div><br/>
+    <h2>code hiding</h2>
+<div class='sagehtml'><script type='text/x-sage'>
+from IPython.display import HTML
+display(HTML("""<script>
+div_show=false; 
+function input_hide_display() {
+    if (div_show) {
+        $('.sagecell_input').each(function(id) {
+            if (id==0||$(this).html().indexOf('hide_display')>-1){$(this).hide();} });
+        $('.sagecell_input').css('opacity',0);} 
+    else {$('.sagecell_input').each(function(id){$(this).show();});
+          $('.sagecell_input').css('opacity',1);};
+    div_show=!div_show;} 
+$(document).ready(input_hide_display);
+</"""+"""script>
+<form action='javascript:input_hide_display()'>
+<input style='color:slategray; background:silver; opacity:.7;'
+type='submit' value='click to display or hide div'></form>"""))
+</script></div><br/>
+  </body>
+</html>

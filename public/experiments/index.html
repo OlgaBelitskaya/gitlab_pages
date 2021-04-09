@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset='utf-8'>
+    <title>🏙 Experiment List</title>
+  </head>
+  <style>
+    @import 'https://fonts.googleapis.com/css?family=Akronim';
+    h1,h2,h3,h4 {color:slategray; font-family:Akronim; text-shadow:4px 4px 4px #aaa; padding-left:20px;}
+    .tr1 {font-family:Akronim; font-size:36px; border:double slategray;}
+    .tr2 {background-color:silver;}
+    .td1 {width:35%; padding-left:20px;}
+    p,a {color:slategray; font-size:110%; text-shadow:4px 4px 4px #aaa; padding-left:20px;}
+    details > summary {width:90%; background-color:silver; cursor:pointer;
+                       border:double slategray; box-shadow:4px 4px 4px #aaa;}
+    body {margin:5px 5px 5px 20px; background:whitesmoke; border:double slategray;}
+  </style>
+  <body>
+    <div class='navbar'>
+      <a href='https://olgabelitskaya.gitlab.io/index.html'>🌐 &nbsp; Homepage &nbsp; &nbsp;</a>  
+      <a href='https://olgabelitskaya.github.io/README.html'>🌐 &nbsp; GitHub Pages &nbsp; &nbsp;</a>
+      <a href='https://www.kaggle.com/olgabelitskaya'>🌐 &nbsp; Kaggle Profile &nbsp; &nbsp;</a>  
+      <a href='https://www.instagram.com/olga.belitskaya/'>🌐 &nbsp; Instagram Posts &nbsp; &nbsp;</a>     
+      <a href='https://www.pinterest.ru/olga_belitskaya/code-style/'>🌐 &nbsp; Pinterest Posts</a>
+    </div><br/>
+    <h1 id='colored_header1' style='font-size:36px;'>
+      <center>🏙  Experiment List</center></h1><br/>
+    <table style='width:90%; color:darkslategray; font-size:110%; border-collapse:collapse; border:double slategray;'>
+      <tr class='tr1'><th>Part</th><th>Description</th><th>Modules</th></tr>
+      <tr class='tr2'><td class='td1'><a href='https://olgabelitskaya.gitlab.io/experiments/chart_building01.html'>
+      📑 Chart Building 01: </a><br/>Line Charts with Transition</td>
+        <td><center>interactive D3 line charts with Google fonts, random values</center></td>
+        <td><center>d3.v6</center></td></tr>
+      <tr><td class='td1'><a href='https://olgabelitskaya.gitlab.io/experiments/chart_building02.html'>
+      📑 Chart Building 02: </a><br/>Bar Charts with Color Interpolation</td>
+        <td><center>interactive D3 bar charts with Google fonts, user values</center></td>
+        <td><center>d3.v6</center></td></tr>
+      <tr class='tr2'><td class='td1'><a href='https://olgabelitskaya.gitlab.io/experiments/mobilenet_drawings.html'>
+      📑 Experiment 01: </a><br/>MobileNet Experimants with Drawings</td>
+        <td><center>drawing recognition</center></td>
+        <td><center>npm@tensorflow/tfjs, npm/@tensorflow-models/mobilenet, npm/@tensorflow-models/knn-classifier
+            </center></td></tr>
+      <tr><td class='td1'><a href='https://olgabelitskaya.gitlab.io/experiments/mobilenet_photos.html'>
+      📑 Experiment 02: </a><br/>MobileNet Experimants with Photos</td>
+        <td><center>photo recognition</center></td>
+        <td><center>npm@tensorflow/tfjs, npm/@tensorflow-models/mobilenet, npm/@tensorflow-models/knn-classifier
+            </center></td></tr>
+       <tr class='tr2'><td class='td1'><a href='https://olgabelitskaya.gitlab.io/experiments/style_transfer_selfies.html'>
+      📑 Style Transfer 01: </a><br/>Magenta Experiments with Paintings, Patterns, Symbols, & Selfies</td>
+        <td><center>image style transfer</center></td>
+        <td><center>tensorflow, sagemathcell</center></td></tr>
+      <tr><td class='td1'><a href='https://olgabelitskaya.gitlab.io/experiments/style_transfer_photos.html'>
+      📑 Style Transfer 02: </a><br/>In Progress</td>
+        <td><center>_____</center></td>
+        <td><center>_____</center></td></tr>
+      <tr class='tr2'><td class='td1'>
+        <a href='https://olgabelitskaya.gitlab.io/experiments/observable_styling-of-mouse-events.html'>            
+      📑 Observable Notebook 01: </a><br/>Styling of Mouse Events</td>
+        <td><center>mouse multicolor drawing</center></td>
+        <td><center>d3v6</center></td></tr>
+      <tr><td class='td1'><a href='https://olgabelitskaya.gitlab.io/experiments/wolfram24.html'>
+      📑 Wolfram Notebooks #1-24: </a><br/>Online Mini Campus. Parts 1-24 </td>
+        <td><center>various plotting exercises</center></td>
+        <td><center> Mathematica </center></td></tr>
+    <tr class='tr2'><td class='td1'>
+        <a href='https://rnotebook.io/anon/7ef80b2edeb6f368/notebooks/r_online01.ipynb'>            
+      📑 R Online Notebook 01: </a><br/>Element Styling</td>
+        <td><center>code cells, html elements, etc. with notebook styling</center></td>
+        <td><center>r jupyter</center></td></tr>
+    </table>
+    <br/><br/>
+    <script>
+      var tc=setInterval(function() {
+        var list=document.getElementsByClassName('td1');
+        var n=list.length;
+        var doc1=document.getElementById('colored_header1');
+        var now=new Date().getTime();
+        var sec=Math.floor((now%(1000*60))/1000);
+        var col='rgb('+(10+Math.abs(245-8*sec))+',0,'+(255-Math.abs(245-8*sec))+')';
+        doc1.style.color=col;
+        for (var i=0; i<n; i++) {list[i].style.color=col;} },
+        1000);
+    </script>   
+  </body>
+</html>

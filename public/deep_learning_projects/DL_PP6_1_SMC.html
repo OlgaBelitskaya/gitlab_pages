@@ -1,0 +1,136 @@
+<!DOCTYPE HTML>
+<html>
+  <head>
+    <meta charset='utf-8'>
+    <meta name='viewport' content='width=device-width'>
+    <title>🏙 DL PP6_1 SMC</title>
+    <script src='https://sagecell.sagemath.org/static/embedded_sagecell.js'></script>
+    <script>$(function(){
+      sagecell.makeSagecell(
+        {inputLocation:'div.linked',linked:true,evalButtonText:'run linked cells'});});
+    </script>
+  </head>
+  <style>
+    @import 'https://fonts.googleapis.com/css?family=Akronim|Lobster';
+    h1,h2,th {color:#348ABD; font-family:Akronim; font-size:120%; text-shadow:4px 4px 4px #aaa;}
+    p,a {color:slategray; font-family:Lobster; font-size:120%; text-shadow:4px 4px 4px #aaa;}
+    .sagecell .CodeMirror-scroll {min-height:3em; max-height:70em;}
+    body {margin:5px 5px 5px 15px;}
+  </style>  
+  <body>
+    <h1>📑 &nbsp; Deep Learning. Practice Project 6_1: TensorFlow Hub Models</h1>
+<a href='https://olgabelitskaya.gitlab.io/index.html'>&#x1F300; &nbsp; Homepage &nbsp; &nbsp;</a>
+<a href='https://olgabelitskaya.gitlab.io/deep_learning_projects/index.html'>&#x1F300; &nbsp; Project List &nbsp; &nbsp;</a>
+<a href='https://olgabelitskaya.github.io/README.html'>&#x1F300; &nbsp; GitHub Pages &nbsp; &nbsp;</a>
+<a href='https://olgabelitskaya.gitlab.io/deep_learning_projects/DL_PP5_0_SMC.html'>
+&#x1F300; &nbsp; Previous &nbsp; &nbsp;</a>
+<a href='https://olgabelitskaya.gitlab.io/deep_learning_projects/DL_PP6_0_SMC.html'>
+&#x1F300; &nbsp; Main &nbsp; &nbsp;</a>
+<a href='https://olgabelitskaya.gitlab.io/deep_learning_projects/DL_PP7_0_SMC.html'>
+&#x1F300; &nbsp; Next &nbsp; &nbsp;</a><br/>
+<a href='https://www.instagram.com/olga.belitskaya/'>&#x1F300; &nbsp; Instagram Posts &nbsp; &nbsp;</a>
+<a href='https://www.pinterest.ru/olga_belitskaya/code-style/'>&#x1F300; &nbsp; Pinterest Posts</a><br/>
+In this project, we'll classify images from the dataset
+<a href='https://www.kaggle.com/olgabelitskaya/tomato-cultivars'>Tomato Cultivars</a>.<br/>
+The content is about 700-800 images (160x160x3) with 15 tomato cultivars
+stored in the file of <i>Hierarchical Data Format (HDF5)</i> and it's in the building process.<br/>
+In the original dataset, photo files have the extension PNG and they are labeled by file prefixes.<br/>
+We'll preprocess the images, represent their examples, then train neural networks.<br/> 
+We are going to apply 
+<a href='https://keras.io/'>Keras: a Python Deep Learning Library</a><br/>
+    <h2>✒️ &nbsp; Code Modules & Settings</h2>
+<div class='linked'><script type='text/x-sage'>      
+!python3 -m pip install tensorflow_hub --user --quiet --no-warn-script-location
+spath='/home/sc_work/.sage/local/lib/python3.8/site-packages'
+import sys,warnings; sys.path.append(spath); warnings.filterwarnings('ignore')
+import tensorflow_hub as th,tensorflow as tf
+import numpy as np,pandas as pd,pylab as pl,h5py,urllib
+import tensorflow.keras.callbacks as tkc,\
+tensorflow.keras.utils as tku,tensorflow.keras.layers as tkl
+from IPython.display import HTML
+HTML('<style>.sagecell_input {text-shadow:4px 4px 4px #aaa;}</style>')
+</script></div><br/>
+    <h2>✒️ &nbsp; Image Data</h2>
+<div class='linked'><script type='text/x-sage'>      
+file_path='https://raw.githubusercontent.com/OlgaBelitskaya/data_kitchen/main/'
+file_name='TomatoCultivars160.h5'; img_size=int(96)
+def get_file(file_path,file_name):
+    input_file=urllib.request.urlopen(file_path+file_name)
+    output_file=open(file_name,'wb')
+    output_file.write(input_file.read())
+    output_file.close(); input_file.close()
+get_file(file_path,file_name)
+with h5py.File(file_name,'r') as f:
+    keys=list(f.keys())
+    pretty_print(html('<p>file keys: '+', '.join(keys)+'</p>'))
+    images=np.array(f[keys[0]])
+    images=tf.image.resize(images,[img_size,img_size]).numpy()
+    labels=np.array(f[keys[1]])
+    names=[el.decode('utf-8')for el in f[keys[2]]]
+    f.close()
+N=labels.shape[0]; n=int(.1*N)
+num_classes=len(names); start=int(100) 
+shuffle_ids=np.arange(N)
+np.random.RandomState(12).shuffle(shuffle_ids)
+images=images[shuffle_ids]; labels=labels[shuffle_ids]
+x_test,x_valid,x_train=images[:n],images[n:2*n],images[2*n:]
+y_test,y_valid,y_train=labels[:n],labels[n:2*n],labels[2*n:]
+df=pd.DataFrame(
+    [[x_train.shape,x_valid.shape,x_test.shape],
+     [x_train.dtype,x_valid.dtype,x_test.dtype],
+     [y_train.shape,y_valid.shape,y_test.shape],
+     [y_train.dtype,y_valid.dtype,y_test.dtype]],
+    columns=['train','valid','test'],
+    index=['image shape','image type','label shape','label type'])
+def display_imgs(images,labels,names,start):
+    fig=pl.figure(figsize=(6,3)); n=randint(0,start-1)
+    for i in range(n,n+6):
+        ax=fig.add_subplot(2,3,i-n+1,xticks=[],yticks=[])
+        ax.set_title(
+            names[labels[i]],color='slategray',fontdict={'fontsize':'small'})
+        ax.imshow((images[i]))
+    pl.tight_layout(); pl.show()
+display_imgs(images,labels,names,start); display(df)
+</script></div><br/>
+    <h2>✒️ &nbsp; Model Functions</h2>
+<div class='linked'><script type='text/x-sage'>      
+def premodel(pix,den,mh,lbl,activ,loss):
+    model=tf.keras.Sequential([
+        tkl.Input((pix,pix,int(3)),name='input'),
+        th.KerasLayer(mh,trainable=True),
+        tkl.Flatten(),
+        tkl.Dense(den,activation='relu'),
+        tkl.Dropout(rate=.5),
+        tkl.Dense(lbl,activation=activ)])
+    model.compile(optimizer='adam',metrics=['accuracy'],loss=loss)
+    return model
+def cb(fw):
+    early_stopping=tkc.EarlyStopping(
+        monitor='val_loss',patience=int(20),verbose=int(2))
+    checkpointer=tkc.ModelCheckpoint(
+        filepath=fw,verbose=int(2),save_weights_only=True,
+        monitor='val_accuracy',mode='max',save_best_only=True)
+    lr_reduction=tkc.ReduceLROnPlateau(
+        monitor='val_loss',verbose=int(2),patience=int(5),factor=.8)
+    return [checkpointer,early_stopping,lr_reduction]
+</script></div><br/>
+    <h2>✒️ &nbsp; Model Training</h2>
+<div class='linked'><script type='text/x-sage'>      
+fw='/tmp/checkpoint'
+[handle_base,pixels]=['mobilenet_v2_100_96',int(96)]
+mhandle='https://tfhub.dev/google/imagenet/{}/classification/4'\
+.format(handle_base)
+model=premodel(pixels,int(512),mhandle,num_classes,
+               'softmax','sparse_categorical_crossentropy')
+history=model.fit(x=x_train,y=y_train,batch_size=int(32),
+                  epochs=int(1),callbacks=cb(fw),verbose=int(0),
+                  validation_data=(x_valid,y_valid))
+</script></div><br/>
+    <h2>✒️ &nbsp; Model Evaluation</h2>
+<div class='linked'><script type='text/x-sage'>      
+model.load_weights(fw)
+model.evaluate(x_test,y_test,verbose=int(0))
+</script></div><br/>
+  </body>
+</html>
+

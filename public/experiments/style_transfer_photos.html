@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<meta charset='utf-8'>
+<head>
+  <script src='https://sagecell.sagemath.org/static/embedded_sagecell.js'></script>
+  <script>$(function(){
+    sagecell.makeSagecell(
+      {inputLocation:'div.linked',linked:true,evalButtonText:'run linked cells'}); });
+  </script>
+</head>
+<style>
+  @import 'https://fonts.googleapis.com/css?family=Akronim';
+  .ph1 {font-family:Akronim; font-size:160%; text-shadow:3px 3px 3px #aaa;}
+  a {color:slategray; font-size:110%; text-shadow:3px 3px 3px #aaa;}
+  h2 {color:slategray; font-family:Akronim; font-size:120%; text-shadow:4px 4px 4px #aaa;}
+  .sagecell .CodeMirror-scroll {min-height:3em; max-height:70em; text-shadow:3px 3px 3px #aaa;}
+  body {max-width:95%; margin:5px 5px 5px 15px; padding: 0 1em;}
+</style>
+<body>
+  <div class='navbar'>
+    <a href='https://olgabelitskaya.gitlab.io/index.html'>🌐 &nbsp; Homepage &nbsp; &nbsp;</a>
+    <a href='https://olgabelitskaya.gitlab.io/experiments/index.html'>🌐 &nbsp; Experiment List &nbsp; &nbsp;</a>
+    <a href='https://olgabelitskaya.github.io/README.html'>🌐 &nbsp; GitHub Pages &nbsp; &nbsp;</a> 
+  </div>
+  <h1 class='ph1' id='ch1'>Style Transfer In Progress.</h1>
+  <h2>✒️ &nbsp; Modules & Settings</h2>
+<div class='linked'><script type='text/x-sage'>
+!python3 -m pip install tensorflow_hub \
+--user --quiet --no-warn-script-location --no-warn-conflicts
+path='/home/sc_work/.sage/local/lib/python3.8/site-packages'
+import os,sys,warnings,urllib
+sys.path.append(path); warnings.filterwarnings('ignore')
+import tensorflow_hub as hub,tensorflow as tf
+from IPython.display import display,HTML
+from IPython.core.magic import register_line_magic
+os.environ['TFHUB_MODEL_LOAD_FORMAT']='COMPRESSED'
+</script></div><br/>
+  <h2>✒️ &nbsp; Data Loading</h2>
+<div class='linked'><script type='text/x-sage'>
+
+</script></div><br/>
+<div class='linked'><script type='text/x-sage'>
+
+</script></div><br/>
+  <h2>✒️ &nbsp; Model Usage</h2>
+<div class='linked'><script type='text/x-sage'>
+
+</script></div><br/>
+  <h2>✒️ &nbsp; Animation</h2>
+<div class='linked'><script type='text/x-sage'>
+
+</script></div><br/>
+  <h2>✒️ &nbsp; Your Experiments</h2>
+<div class='linked'><script type='text/x-sage'>
+
+</script></div><br/>
+<script type='module'>
+var tc=setInterval(function() {
+  var doc1=document.getElementById('ch1');
+  var now=Math.floor((new Date().getTime()%(1000*60))/1000);
+  var col='rgb('+(10+Math.abs(245-8*now))+','+(255-Math.abs(245-8*now))+',0)';
+  doc1.style.color=col}, 1000);
+</script>
+</body>

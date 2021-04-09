@@ -1,0 +1,421 @@
+<!DOCTYPE HTML>
+<html>
+  <head>
+    <meta charset='utf-8'>
+    <meta name='viewport' content='width=device-width'>
+    <title>🏙 DL PP4_0 DMC</title>
+    <script src='https://sagecell.sagemath.org/static/embedded_sagecell.js'></script>
+    <script>$(function(){
+      sagecell.makeSagecell(
+        {inputLocation:'div.linked',linked:true,evalButtonText:'run linked cells'}); });
+    </script>
+  </head>
+  <style>
+    @import 'https://fonts.googleapis.com/css?family=Akronim|Lobster';
+    h1,h2,th {color:#348ABD; font-family:Akronim; font-size:120%; text-shadow:4px 4px 4px #aaa;}
+    p,a {color:slategray; font-family:Lobster; font-size:120%; text-shadow:4px 4px 4px #aaa;}
+    .sagecell .CodeMirror-scroll {min-height:3em; max-height:70em;}
+    body {margin:5px 5px 5px 15px;}
+  </style>
+  <body>
+    <h1>📑 &nbsp; Deep Learning. Practice Project 4_0: Decor Recognition & Contour Colorization</h1>
+<a href='https://olgabelitskaya.gitlab.io/index.html'>&#x1F300; &nbsp; Homepage &nbsp; &nbsp;</a>
+<a href='https://olgabelitskaya.gitlab.io/deep_learning_projects/index.html'>&#x1F300; &nbsp; Project List &nbsp; &nbsp;</a>
+<a href='https://olgabelitskaya.github.io/README.html'>&#x1F300; &nbsp; GitHub Pages &nbsp; &nbsp;</a>
+<a href='https://olgabelitskaya.gitlab.io/deep_learning_projects/DL_PP3_0_SMC.html'>
+&#x1F300; &nbsp; Previous &nbsp; &nbsp;</a>
+<a href='https://olgabelitskaya.gitlab.io/deep_learning_projects/DL_PP4_1_SMC.html'>
+&#x1F300; &nbsp; Addition 1 &nbsp; &nbsp;</a>
+<a href='https://olgabelitskaya.gitlab.io/deep_learning_projects/DL_PP4_2_SMC.html'>
+&#x1F300; &nbsp; Addition 2 &nbsp; &nbsp;</a>
+<a href='https://olgabelitskaya.gitlab.io/deep_learning_projects/DL_PP5_0_SMC.html'>
+&#x1F300; &nbsp; Next &nbsp; &nbsp;</a><br/>
+<a href='https://www.instagram.com/olga.belitskaya/'>&#x1F300; &nbsp; Instagram Posts &nbsp; &nbsp;</a>
+<a href='https://www.pinterest.ru/olga_belitskaya/code-style/'>&#x1F300; &nbsp; Pinterest Posts</a><br/>
+For this project, I have created the dataset of color images (150x150x3) with traditional patterns.<br/>
+Let's have a look at some decor contours. 
+<div class='linked'><script type='text/x-sage'>
+import warnings; warnings.filterwarnings('ignore')
+from IPython.display import HTML,display
+display(HTML('<style>.sagecell_input {text-shadow:4px 4px 4px #aaa;}</style>'))
+from skimage import io,color,measure
+@interact
+def _vector(file=slider([1,2,..,24],default=5),
+            level=slider([round(.9-.03*i,2) for i in range(15)],default=.81),
+            cm=selector(['ocean','cool','hsv','gnuplot2','terrain',
+                         'flag','winter','spring','summer','autumn'],
+                        default='cool',width='200px')):
+    file_path='https://raw.githubusercontent.com/OlgaBelitskaya/data/main/decors/'
+    file_name='00_00_%03d'%(file)+'.png'
+    img=io.imread(file_path+file_name); level=float(level)
+    gray_img=color.colorconv.rgb2gray(
+        color.colorconv.rgba2rgb(img))
+    contours=measure.find_contours(gray_img,level)
+    n=len(contours)
+    p=sum([list_plot(list(zip(contours[i][:,1],contours[i][:,0])),
+                     color=colormaps[cm](i/n)[:3],plotjoined=True,
+                     flip_y=True,alpha=.7) for i in range(n)])
+    g=multi_graphics([matrix_plot(img/255),p])
+    g.show(frame=False,axes=False,aspect_ratio=1,transparent=True,
+           xmin=0,ymin=0,xmax=img.shape[1],ymax=img.shape[0])
+</script></div><br/> 
+    <h2>✒️ &nbsp;Step 0. Import Libraries</h2>      
+<div class='linked'><script type='text/x-sage'>
+import warnings; warnings.filterwarnings('ignore')
+import tensorflow as tf,numpy as np,pandas as pd
+import seaborn as sn,pylab as pl,h5py,urllib
+import tensorflow.keras.callbacks as tkc,\
+tensorflow.keras.layers as tkl
+np.set_printoptions(precision=6)
+pl.style.use('seaborn-whitegrid')
+model_weights='/tmp/checkpoint'
+</script></div><br/>
+<div class='linked'><script type='text/x-sage'>
+def h5file2data(h5file,cmap,img_size,resize=True):
+    with h5py.File(h5file,'r') as f:
+        keys=list(f.keys())
+        pretty_print('file keys: '+', '.join(keys))
+        images=np.array(f[keys[int(0)]])
+        labels=np.array(f[keys[int(1)]])
+        names=[[el.decode('utf-8') for el in f[keys[i]]]
+               for i in range(int(2),len(keys))]
+        f.close()
+    N=images.shape[int(0)]; n=int(.1*N)
+    if resize:
+        images=tf.image.resize(images,[img_size,img_size]).numpy()
+    shuffle_ids=np.arange(N)
+    np.random.RandomState(12).shuffle(shuffle_ids)
+    images=images[shuffle_ids]
+    labels=np.array([labels[i][shuffle_ids] 
+                     for i in range(labels.shape[int(0)])])
+    x_test,x_valid,x_train=images[:n],images[n:2*n],images[2*n:]
+    y_test,y_valid,y_train=labels[:,:n],labels[:,n:2*n],labels[:,2*n:]
+    pretty_print('data outputs: ')
+    df=pd.DataFrame([[x_train.shape,x_valid.shape,x_test.shape],
+                     [x_train.dtype,x_valid.dtype,x_test.dtype],
+                     [y_train.shape,y_valid.shape,y_test.shape],
+                     [y_train.dtype,y_valid.dtype,y_test.dtype]],
+                    columns=['train','valid','test'],
+                    index=['image shape','image type',
+                           'label shape','label type'])
+    display(df)
+    pretty_print('distribution of labels: ')
+    idx=['labels %d'%(i+int(1)) for i in range(labels.shape[int(0)])]
+    df=pd.DataFrame(labels,index=idx).T
+    for i in range(labels.shape[int(0)]):
+        df['name %d'%(i+int(1))]=[names[i][l] for l in labels[i]]
+    fig=pl.figure(figsize=(9,6))    
+    for i in range(labels.shape[int(0)]):
+        ax=fig.add_subplot(labels.shape[int(0)],int(1),i+int(1))
+        sn.countplot(x='name %s'%(i+1),data=df,palette=cmap,alpha=.5,ax=ax)
+    pl.tight_layout(); pl.show()       
+    return [names,x_train,x_valid,x_test,y_train,y_valid,y_test]
+</script></div><br/>
+<div class='linked'><script type='text/x-sage'>
+def display_images(images,labels,names,n):
+    fig=pl.figure(figsize=(9,n/2))
+    randch=np.random.choice(images.shape[0],size=n,replace=False)
+    for i,idx in enumerate(randch):
+        ax=fig.add_subplot(int(n//5)+1,5,i+1,xticks=[],yticks=[])
+        ax.imshow(images[idx],cmap='bone')
+        label=[labels[:,idx]]
+        name=[names[i][labels[i][idx]] for i in range(labels.shape[0])]
+        ti='{} \n {}'.format(str(label),str(name))
+        ax.set_title(ti,fontsize=8)
+    pl.tight_layout(); pl.show()
+def keras_history_plot(fit_history,fig_size,color):
+    keys=list(fit_history.history.keys())
+    list_history=[fit_history.history[keys[i]] for i in range(len(keys))]
+    dfkeys=pd.DataFrame(list_history).T
+    dfkeys.columns=keys
+    fig=pl.figure(figsize=(fig_size,fig_size/1.5))
+    ax1=fig.add_subplot(2,1,1)
+    dfkeys.iloc[:,[int(0),int(2)]].plot(
+        ax=ax1,color=['slategray',color],grid=True)
+    ax2=fig.add_subplot(2,1,2)
+    dfkeys.iloc[:,[int(1),int(3)]].plot(
+        ax=ax2,color=['slategray',color],grid=True)
+    pl.tight_layout(); pl.show()
+</script></div><br/>
+    <h2>✒️ &nbsp;Step 1. Load and Explore the Data</h2>
+<div class='linked'><script type='text/x-sage'>
+path='https://raw.githubusercontent.com/OlgaBelitskaya/data_kitchen/main/'
+zf='Decors150.h5'; input_file=urllib.request.urlopen(path+zf)
+output_file=open(zf,'wb'); output_file.write(input_file.read())
+output_file.close(); input_file.close()
+img_size=int(48)
+[names,x_train,x_valid,x_test,y_train,y_valid,y_test]=\
+h5file2data(zf,'Pastel1',img_size)
+os.remove(zf)
+</script></div><br/>
+<div class='linked'><script type='text/x-sage'>
+gx_train=np.dot(x_train[...,:3],[.299,.587,.114])
+gx_valid=np.dot(x_valid[...,:3],[.299,.587,.114])
+gx_test=np.dot(x_test[...,:3],[.299,.587,.114])
+display_images(x_train,y_train,names,5)
+display_images(gx_test,y_test,names,5)
+gx_train=gx_train.reshape(-int(1),img_size,img_size,int(1))
+gx_valid=gx_valid.reshape(-int(1),img_size,img_size,int(1))
+gx_test=gx_test.reshape(-int(1),img_size,img_size,int(1))
+</script></div><br/>
+<p>Unfortunately, we can train with guarantee only one neural network at ones.</p>
+<p>Please restart the page and load the data again for training each of them.</p>
+    <h2>✒️&nbsp;Step 2. One-Label Classification Models</h2>
+<div class='linked'><script type='text/x-sage'>
+# Color Images / Countries
+def model():
+    model=tf.keras.Sequential()
+    model.add(tkl.Conv2D(
+        int(32),(int(5),int(5)),padding='same',
+        input_shape=x_train.shape[int(1):]))
+    model.add(tkl.LeakyReLU(alpha=.02))   
+    model.add(tkl.MaxPooling2D(pool_size=(int(2),int(2))))
+    model.add(tkl.Dropout(.2))
+    model.add(tkl.Conv2D(int(96),(int(5),int(5))))
+    model.add(tkl.LeakyReLU(alpha=.02))   
+    model.add(tkl.MaxPooling2D(pool_size=(int(2),int(2))))
+    model.add(tkl.Dropout(.2))   
+    model.add(tkl.GlobalMaxPooling2D())    
+    model.add(tkl.Dense(int(512)))
+    model.add(tkl.LeakyReLU(alpha=.02)) 
+    model.add(tkl.Dropout(.5))    
+    model.add(tkl.Dense(int(4)))
+    model.add(tkl.Activation('softmax'))   
+    model.compile(loss='sparse_categorical_crossentropy',
+                  optimizer='nadam',metrics=['accuracy'])   
+    return model
+model=model() 
+</script></div><br/>
+<div class='linked'><script type='text/x-sage'>
+checkpointer=tkc.ModelCheckpoint(
+    filepath=model_weights,verbose=int(0),save_weights_only=True,
+    monitor='val_accuracy',mode='max',save_best_only=True)
+lr_reduction=tkc.ReduceLROnPlateau(
+    monitor='val_loss',patience=int(5),verbose=int(0),factor=.8)
+history=model.fit(x_train,y_train[int(0),:],epochs=int(16),
+                  batch_size=int(16),verbose=int(2),
+                  validation_data=(x_valid,y_valid[int(0),:]),
+                  callbacks=[checkpointer,lr_reduction])
+</script></div><br/>
+<div class='linked'><script type='text/x-sage'>
+keras_history_plot(history,9,'#348ABD')
+model.load_weights(model_weights)
+pretty_print(model.evaluate(x_test,y_test[int(0),:],verbose=int(0)))
+</script></div><br/>
+<div class='linked'><script type='text/x-sage'>
+# Color Images / Decors
+def model(leaky_alpha):
+    model=tf.keras.Sequential()
+    model.add(tkl.Conv2D(
+        int(32),(int(5),int(5)),padding='same', 
+        input_shape=x_train.shape[int(1):]))
+    model.add(tkl.LeakyReLU(alpha=leaky_alpha))    
+    model.add(tkl.MaxPooling2D(pool_size=(int(2),int(2))))
+    model.add(tkl.Dropout(.2))
+    model.add(tkl.Conv2D(int(96),(int(5),int(5))))
+    model.add(tkl.LeakyReLU(alpha=leaky_alpha))    
+    model.add(tkl.MaxPooling2D(pool_size=(int(2),int(2))))
+    model.add(tkl.Dropout(.2))   
+    model.add(tkl.GlobalMaxPooling2D())     
+    model.add(tkl.Dense(int(512)))
+    model.add(tkl.LeakyReLU(alpha=leaky_alpha))
+    model.add(tkl.Dropout(.5))     
+    model.add(tkl.Dense(int(7)))
+    model.add(tkl.Activation('softmax'))   
+    model.compile(loss='sparse_categorical_crossentropy',
+                  optimizer='nadam',metrics=['accuracy'])   
+    return model
+model=model(float(.005))  
+</script></div><br/>
+<div class='linked'><script type='text/x-sage'>
+checkpointer=tkc.ModelCheckpoint(
+    filepath=model_weights,verbose=int(0),save_weights_only=True,
+    monitor='val_accuracy',mode='max',save_best_only=True)
+lr_reduction=tkc.ReduceLROnPlateau(
+    monitor='val_loss',patience=int(5),verbose=int(0),factor=.8)
+history=model.fit(x_train,y_train[int(1),:],epochs=int(16),
+                  batch_size=int(16),verbose=int(2),
+                  validation_data=(x_valid,y_valid[int(1),:]),
+                  callbacks=[checkpointer,lr_reduction])
+</script></div><br/>
+<div class='linked'><script type='text/x-sage'>
+keras_history_plot(history,9,'#348ABD')
+model.load_weights(model_weights)
+pretty_print(model.evaluate(x_test,y_test[int(1),:],verbose=int(0)))
+</script></div><br/>
+<div class='linked'><script type='text/x-sage'>
+# Grayscaled Images / Countries
+def gray_model():
+    model=tf.keras.Sequential()
+    model.add(tkl.Conv2D(
+        int(16),(int(5),int(5)),padding='same', 
+        input_shape=gx_train.shape[1:]))
+    model.add(tkl.LeakyReLU(alpha=.02))
+    model.add(tkl.MaxPooling2D(pool_size=(int(2),int(2))))
+    model.add(tkl.Dropout(.2))
+    model.add(tkl.Conv2D(int(128),(int(5),int(5))))
+    model.add(tkl.LeakyReLU(alpha=.02))
+    model.add(tkl.MaxPooling2D(pool_size=(int(2),int(2))))
+    model.add(tkl.Dropout(.2))
+    model.add(tkl.GlobalMaxPooling2D())
+    model.add(tkl.Dense(int(512),activation='tanh'))
+    model.add(tkl.Dropout(.5))
+    model.add(tkl.Dense(int(4)))
+    model.add(tkl.Activation('softmax'))
+    model.compile(loss='sparse_categorical_crossentropy',
+                  optimizer='rmsprop',metrics=['accuracy'])
+    return model
+gray_model=gray_model()
+</script></div><br/>
+<div class='linked'><script type='text/x-sage'>
+checkpointer=tkc.ModelCheckpoint(
+    filepath=model_weights,verbose=int(0),save_weights_only=True,
+    monitor='val_accuracy',mode='max',save_best_only=True)
+lr_reduction=tkc.ReduceLROnPlateau(
+    monitor='val_loss',patience=int(5),verbose=int(0),factor=.8)
+history=gray_model.fit(gx_train,y_train[int(0),:], 
+                       epochs=int(16),batch_size=int(16),verbose=int(2),
+                       validation_data=(gx_valid,y_valid[int(0),:]),
+                       callbacks=[checkpointer,lr_reduction])
+</script></div><br/>
+<div class='linked'><script type='text/x-sage'>
+keras_history_plot(history,9,'#348ABD')
+gray_model.load_weights(model_weights)
+pretty_print(gray_model.evaluate(gx_test,y_test[int(0),:],verbose=int(0)))
+</script></div><br/>
+<div class='linked'><script type='text/x-sage'>
+# Grayscaled Images / Decors
+def gray_model(leaky_alpha):
+    model=tf.keras.Sequential()
+    model.add(tkl.Conv2D(
+        int(16),(int(5),int(5)),padding='same', 
+        input_shape=gx_train.shape[int(1):]))
+    model.add(tkl.LeakyReLU(alpha=leaky_alpha))    
+    model.add(tkl.MaxPooling2D(pool_size=(int(2),int(2))))
+    model.add(tkl.Dropout(.2))
+    model.add(tkl.Conv2D(int(128),(int(5),int(5))))
+    model.add(tkl.LeakyReLU(alpha=leaky_alpha))    
+    model.add(tkl.MaxPooling2D(pool_size=(int(2),int(2))))
+    model.add(tkl.Dropout(.2))  
+    model.add(tkl.GlobalMaxPooling2D())    
+    model.add(tkl.Dense(int(512), activation='tanh'))
+    model.add(tkl.Dropout(.5))   
+    model.add(tkl.Dense(int(7)))
+    model.add(tkl.Activation('softmax'))
+    model.compile(loss='sparse_categorical_crossentropy',
+                  optimizer='rmsprop',metrics=['accuracy'])
+    return model
+gray_model=gray_model(float(.01))
+</script></div><br/>
+<div class='linked'><script type='text/x-sage'>
+checkpointer=tkc.ModelCheckpoint(
+    filepath=model_weights,verbose=int(0),save_weights_only=True,
+    monitor='val_accuracy',mode='max',save_best_only=True)
+lr_reduction=tkc.ReduceLROnPlateau(
+    monitor='val_loss',patience=int(5),verbose=int(0),factor=.8)
+history=gray_model.fit(
+    gx_train,y_train[int(1),:], 
+    epochs=int(16),batch_size=int(16),verbose=int(2),
+    validation_data=(gx_valid,y_valid[int(1),:]),
+    callbacks=[checkpointer,lr_reduction])
+</script></div><br/>
+<div class='linked'><script type='text/x-sage'>
+keras_history_plot(history,9,'#348ABD')
+gray_model.load_weights(model_weights)
+pretty_print(gray_model.evaluate(gx_test,y_test[int(1),:],verbose=int(0)))
+</script></div><br/>
+    <h2>✒️&nbsp;Step 3. Multi-Label Classification Models</h2>      
+<div class='linked'><script type='text/x-sage'>
+def multi_model(leaky_alpha):    
+    model_input=tkl.Input(shape=x_train.shape[int(1):])
+    x=tkl.BatchNormalization()(model_input)
+    x=tkl.Conv2D(int(32),(int(5),int(5)),padding='same')(model_input)
+    x=tkl.LeakyReLU(alpha=leaky_alpha)(x)
+    x=tkl.MaxPooling2D(pool_size=(int(2),int(2)))(x)    
+    x=tkl.Dropout(.2)(x)   
+    x=tkl.Conv2D(int(128),(int(5),int(5)),padding='same')(x)
+    x=tkl.LeakyReLU(alpha=leaky_alpha)(x)
+    x=tkl.MaxPooling2D(pool_size=(int(2),int(2)))(x)    
+    x=tkl.Dropout(.2)(x)            
+    x=tkl.GlobalMaxPooling2D()(x)  
+    x=tkl.Dense(int(512))(x) 
+    x=tkl.LeakyReLU(alpha=leaky_alpha)(x)
+    x=tkl.Dropout(.5)(x)    
+    y1=tkl.Dense(int(4),activation='softmax')(x)
+    y2=tkl.Dense(int(7),activation='softmax')(x)
+    y3=tkl.Dense(int(2),activation='softmax')(x)   
+    model=tf.keras.Model(inputs=model_input,outputs=[y1,y2,y3])
+    model.compile(loss='sparse_categorical_crossentropy',
+                  optimizer='nadam',metrics=['accuracy'])   
+    return model
+multi_model=multi_model(float(.005))
+</script></div><br/>
+<div class='linked'><script type='text/x-sage'>
+checkpointer=tkc.ModelCheckpoint(
+    filepath=model_weights,verbose=int(0),save_weights_only=True,
+    monitor='val_loss',mode='min',save_best_only=True)
+lr_reduction=tkc.ReduceLROnPlateau(
+    monitor='val_loss',patience=int(5),verbose=int(0),factor=.8)
+history=multi_model.fit(
+    x_train,[y_train[i,:] for i in range(3)],
+    epochs=int(12),batch_size=int(16),verbose=int(2),
+    validation_data=(x_valid,[y_valid[i,:] for i in range(3)]),
+    callbacks=[checkpointer,lr_reduction])
+</script></div><br/>
+<div class='linked'><script type='text/x-sage'>
+multi_model.load_weights(model_weights)
+multi_scores=multi_model.evaluate(
+    x_test,[y_test[i,:] for i in range(3)],verbose=int(0))
+print('Scores: \n',(multi_scores))
+print('Country label. Accuracy: %.2f%%'%(multi_scores[int(4)]*100))
+print('Decor label. Accuracy: %.2f%%'%(multi_scores[int(5)]*100))
+print('Type label. Accuracy: %.2f%%'%(multi_scores[int(6)]*100))
+</script></div><br/>
+<div class='linked'><script type='text/x-sage'>
+def gray_multi_model(leaky_alpha):    
+    model_input=tkl.Input(shape=gx_train.shape[int(1):])
+    x=tkl.BatchNormalization()(model_input)
+    x=tkl.Conv2D(int(32),(int(5),int(5)), padding='same')(model_input)
+    x=tkl.LeakyReLU(alpha=leaky_alpha)(x)
+    x=tkl.MaxPooling2D(pool_size=(int(2),int(2)))(x)    
+    x=tkl.Dropout(.2)(x)  
+    x=tkl.Conv2D(int(128),(int(5),int(5)),padding='same')(x)
+    x=tkl.LeakyReLU(alpha=leaky_alpha)(x)
+    x=tkl.MaxPooling2D(pool_size=(int(2),int(2)))(x)    
+    x=tkl.Dropout(.2)(x)             
+    x=tkl.GlobalMaxPooling2D()(x) 
+    x=tkl.Dense(int(512))(x)
+    x=tkl.LeakyReLU(alpha=leaky_alpha)(x)
+    x=tkl.Dropout(.5)(x)   
+    y1=tkl.Dense(int(4),activation='softmax')(x)
+    y2=tkl.Dense(int(7),activation='softmax')(x)
+    y3=tkl.Dense(int(2),activation='softmax')(x) 
+    model=tf.keras.Model(inputs=model_input,outputs=[y1,y2,y3])   
+    model.compile(loss='sparse_categorical_crossentropy',
+                  optimizer='rmsprop',metrics=['accuracy'])  
+    return model
+gray_multi_model=gray_multi_model(float(.01))
+</script></div><br/>
+<div class='linked'><script type='text/x-sage'>
+checkpointer=tkc.ModelCheckpoint(
+    filepath=model_weights,verbose=int(0),save_weights_only=True,
+    monitor='val_loss',mode='min',save_best_only=True)
+lr_reduction=tkc.ReduceLROnPlateau(
+    monitor='val_loss',patience=int(5),verbose=int(0),factor=.8)
+history=gray_multi_model.fit(
+    gx_train,[y_train[i,:] for i in range(3)],
+    epochs=int(12),batch_size=int(16),verbose=int(2),
+    validation_data=(gx_valid,[y_valid[i,:] for i in range(3)]),
+    callbacks=[checkpointer,lr_reduction])
+</script></div><br/>
+<div class='linked'><script type='text/x-sage'>
+gray_multi_model.load_weights(model_weights)
+gray_multi_scores=gray_multi_model.evaluate(
+    gx_test,[y_test[i,:] for i in range(3)],verbose=int(0))
+print('Scores: \n',(gray_multi_scores))
+print('Country label. Accuracy: %.2f%%'%(gray_multi_scores[int(4)]*100))
+print('Decor label. Accuracy: %.2f%%'%(gray_multi_scores[int(5)]*100))
+print('Type label. Accuracy: %.2f%%'%(gray_multi_scores[int(6)]*100))
+</script></div><br/>
+  </body>
+</html> 

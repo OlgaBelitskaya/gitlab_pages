@@ -1,0 +1,242 @@
+<!DOCTYPE HTML>
+<html>
+  <head>
+    <meta charset='utf-8'>
+    <meta name='viewport' content='width=device-width'>
+    <title>🏙 DL PP8_1 SMC</title>
+    <script src='https://sagecell.sagemath.org/static/embedded_sagecell.js'></script>
+    <script>$(function(){
+      sagecell.makeSagecell(
+        {inputLocation:'div.linked',linked:true,evalButtonText:'run linked cells'});});
+    </script>
+  </head>
+  <style>
+    @import 'https://fonts.googleapis.com/css?family=Akronim|Lobster';
+    h1,h2,th {color:#348ABD; font-family:Akronim; font-size:120%; text-shadow:4px 4px 4px #aaa;}
+    p,a {color:slategray; font-family:Lobster; font-size:120%; text-shadow:4px 4px 4px #aaa;}
+    .sagecell .CodeMirror-scroll {min-height:3em; max-height:70em;}
+    body {margin:5px 5px 5px 15px;}
+  </style>  
+  <body>
+    <h1>📑 &nbsp; Deep Learning. Practice Project 8_1: 
+        Exercises with Adversarial Regularization</h1>
+<a href='https://olgabelitskaya.gitlab.io/index.html'>&#x1F300; &nbsp; Homepage &nbsp; &nbsp;</a>
+<a href='https://olgabelitskaya.gitlab.io/deep_learning_projects/index.html'>
+&#x1F300; &nbsp; Project List &nbsp; &nbsp;</a>
+<a href='https://olgabelitskaya.github.io/README.html'>&#x1F300; &nbsp; GitHub Pages &nbsp; &nbsp;</a>
+<a href='https://olgabelitskaya.gitlab.io/deep_learning_projects/DL_PP7_0_SMC.html'>
+&#x1F300; &nbsp; Previous &nbsp; &nbsp;</a>
+<a href='https://olgabelitskaya.gitlab.io/deep_learning_projects/DL_PP8_0_SMC.html'>
+&#x1F300; &nbsp; Main &nbsp; &nbsp;</a>
+<a href='https://www.instagram.com/olga.belitskaya/'>&#x1F300; &nbsp; Instagram Posts &nbsp; &nbsp;</a>
+<a href='https://www.pinterest.ru/olga_belitskaya/code-style/'>&#x1F300; &nbsp; Pinterest Posts</a><br/>
+In this project, we'll classify images from the dataset
+<a href='https://www.kaggle.com/olgabelitskaya/art-pictogram'>Art Pictograms</a>.<br/>
+The content is about 3500 images (64x64x3) with drawings
+stored in the file of <i>Hierarchical Data Format (HDF5)</i>.<br/>
+In the original dataset, photo files have the extension PNG and they are labeled by file prefixes.<br/>
+We'll preprocess the images, represent their examples, then train neural networks.<br/> 
+We are going to apply 
+<a href='https://keras.io/'>Keras: a Python Deep Learning Library</a>.<br/>
+    <h2>✒️ &nbsp; Code Modules, Helpful Functions, & Settings</h2>      
+<div class='linked'><script type='text/x-sage'>
+!python3 -m pip install --upgrade neural_structured_learning \
+--user --quiet --no-warn-script-location
+path='/home/sc_work/.sage/local/lib/python3.8/site-packages'
+import sys,warnings; sys.path.append(path); warnings.filterwarnings('ignore')
+import os,h5py,urllib,pandas as pd,numpy as np
+import tensorflow as tf,pylab as pl,seaborn as sn
+import neural_structured_learning as nsl
+import tensorflow.keras.layers as tkl
+import tensorflow.keras.callbacks as tkc
+file_path='https://raw.githubusercontent.com/OlgaBelitskaya/data_kitchen/main/'
+file_name='Pictograms64.h5'
+model_weights='/tmp/checkpoint'
+img_size=int(32)
+</script></div><br/>
+<div class='linked'><script type='text/x-sage'>      
+def pd_style():
+    return [dict(selector='th',props=[('font-size','12pt'),('min-width','150px')]),
+            dict(selector='td',props=[('padding','0em 0em'),('min-width','150px')]),
+            dict(selector='tr:hover th:hover',
+                 props=[('font-size','14pt'),('max-width','150px'),
+                        ('text-shadow','3px 3px 3px #aaa')]),
+            dict(selector='tr:hover td:hover',
+                 props=[('font-size','12pt'),('max-width','150px'),
+                        ('text-shadow','3px 3px 3px #aaa')])]
+def display_images(images,labels,names,n):
+    fig=pl.figure(figsize=(9,n/2))
+    randch=np.random.choice(images.shape[0],size=n,replace=False)
+    for i,idx in enumerate(randch):
+        ax=fig.add_subplot(int(n//5)+1,5,i+1,xticks=[],yticks=[])
+        ax.imshow(images[idx],cmap='bone')
+        label=[labels[:,idx]]
+        name=[names[i][labels[i][idx]] for i in range(labels.shape[0])]
+        ti='{} \n {}'.format(str(label),str(name))
+        ax.set_title(ti,fontsize=8)
+    pl.tight_layout(); pl.show()
+</script></div><br/> 
+<div class='linked'><script type='text/x-sage'>      
+def h5file2data(h5file,cmap,img_size,resize=True):
+    with h5py.File(h5file,'r') as f:
+        keys=list(f.keys())
+        pretty_print('file keys: '+', '.join(keys))
+        images=np.array(f[keys[int(0)]])
+        labels=np.array(f[keys[int(1)]])
+        names=[[el.decode('utf-8') for el in f[keys[i]]]
+               for i in range(int(2),len(keys))]
+        f.close()
+    N=images.shape[int(0)]; n=int(.1*N)
+    if resize:
+        images=tf.image.resize(images,[img_size,img_size]).numpy()
+    shuffle_ids=np.arange(N)
+    np.random.RandomState(12).shuffle(shuffle_ids)
+    images=images[shuffle_ids]
+    labels=np.array([labels[i][shuffle_ids] 
+                     for i in range(labels.shape[int(0)])])
+    x_test,x_valid,x_train=images[:n],images[n:2*n],images[2*n:]
+    y_test,y_valid,y_train=labels[:,:n],labels[:,n:2*n],labels[:,2*n:]
+    pretty_print('data outputs: ')
+    df=pd.DataFrame([[x_train.shape,x_valid.shape,x_test.shape],
+                     [x_train.dtype,x_valid.dtype,x_test.dtype],
+                     [y_train.shape,y_valid.shape,y_test.shape],
+                     [y_train.dtype,y_valid.dtype,y_test.dtype]],
+                    columns=['train','valid','test'],
+                    index=['image shape','image type',
+                           'label shape','label type'])
+    display(df.style.set_table_styles(pd_style()))
+    pretty_print('distribution of labels: ')
+    idx=['labels %d'%(i+int(1)) for i in range(labels.shape[int(0)])]
+    df=pd.DataFrame(labels,index=idx).T
+    for i in range(labels.shape[int(0)]):
+        df['name %d'%(i+int(1))]=[names[i][l] for l in labels[i]]
+    fig=pl.figure(figsize=(9,6))    
+    for i in range(labels.shape[int(0)]):
+        ax=fig.add_subplot(labels.shape[int(0)],int(1),i+int(1))
+        sn.countplot(x='name %s'%(i+1),data=df,palette=cmap,alpha=.5,ax=ax)
+    pl.tight_layout(); pl.show()       
+    return [names,x_train,x_valid,x_test,y_train,y_valid,y_test]
+</script></div><br/>
+<div class='linked'><script type='text/x-sage'>
+def cb(mw):
+    early_stopping=tf.keras.callbacks.EarlyStopping(
+        monitor='val_sparse_categorical_accuracy',
+        patience=int(20),verbose=int(2),mode='max')
+    checkpointer=tf.keras.callbacks.ModelCheckpoint(
+        save_best_only=True,save_weights_only=True,
+        monitor='val_sparse_categorical_accuracy',
+        filepath=mw,verbose=int(2),mode='max')
+    lr_reduction=tf.keras.callbacks.ReduceLROnPlateau(
+        monitor='val_sparse_categorical_accuracy',
+        verbose=int(2),patience=int(5),factor=float(.9),mode='max')
+    return [checkpointer,early_stopping,lr_reduction]
+def keras_history_plot(
+    fit_history,fig_size=9,color='#348ABD'):
+    keys=list(fit_history.history.keys())
+    list_history=[fit_history.history[keys[i]] 
+                  for i in range(len(keys))]
+    dfkeys=pd.DataFrame(list_history).T
+    dfkeys.columns=keys
+    fig=pl.figure(figsize=(fig_size,fig_size))
+    ax1=fig.add_subplot(3,1,1)
+    dfkeys.iloc[:,[0,4]].plot(ax=ax1,color=['slategray',color],grid=True)
+    ax2=fig.add_subplot(3,1,2)
+    dfkeys.iloc[:,[3,7]].plot(ax=ax2,color=['slategray',color],grid=True)
+    ax3=fig.add_subplot(3,1,3)
+    dfkeys.iloc[:,[2,6]].plot(ax=ax3,color=['slategray',color],grid=True)
+    pl.tight_layout(); pl.show()
+</script></div><br/>
+    <h2>✒️ &nbsp; Data Loading & Processing</h2>
+<div class='linked'><script type='text/x-sage'>      
+input_file=urllib.request.urlopen(file_path+file_name)
+output_file=open(file_name,'wb')
+output_file.write(input_file.read())
+output_file.close(); input_file.close()
+[names,x_train,x_valid,x_test,y_train,y_valid,y_test]=\
+h5file2data(file_name,'tab20',img_size)
+num_classes=len(names[int(1)])
+os.remove(file_name)
+display_images(x_train,y_train,names,5)
+</script></div><br/>
+<div class='linked'><script type='text/x-sage'>      
+batch_size=int(16)
+train=tf.data.Dataset.from_tensor_slices(
+    {'input':x_train,
+     'label':np.array(y_train[1],dtype='float32')}).batch(batch_size)
+valid=tf.data.Dataset.from_tensor_slices(
+    {'input':x_valid,
+     'label':np.array(y_valid[1],dtype='float32')}).batch(batch_size)
+valid_steps=x_valid.shape[0]//batch_size
+</script></div><br/>
+<p>Unfortunately, we can train with guarantee only one neural network at ones.</p>
+<p>Please restart the page and load the data again for training each of them.</p>
+   <h2>✒️ &nbsp; Models with Adversarial Regularization => MLP</h2>
+<div class='linked'><script type='text/x-sage'>
+base_model=tf.keras.Sequential([
+    tf.keras.Input((img_size,img_size,int(3)),name='input'),
+    tkl.Flatten(),
+    tkl.Dense(int(96),activation=tf.nn.relu),
+    tkl.BatchNormalization(),    
+    tkl.Dense(int(256),activation=tf.nn.relu),
+    tkl.Dense(num_classes,activation=tf.nn.softmax)
+])
+adv_config=nsl.configs.make_adv_reg_config(
+    multiplier=float(.2),adv_step_size=float(.05))
+adv_model=nsl.keras.AdversarialRegularization(
+    base_model,adv_config=adv_config)
+adv_model.compile(optimizer='adam',metrics=['accuracy'],
+                  loss='sparse_categorical_crossentropy')
+</script></div><br/>
+<div class='linked'><script type='text/x-sage'>      
+history=adv_model.fit(
+    train,validation_data=valid,validation_steps=valid_steps,
+    verbose=int(2),epochs=int(8),callbacks=cb(model_weights));
+</script></div><br/>
+<div class='linked'><script type='text/x-sage'>
+keras_history_plot(history)
+adv_model.load_weights(model_weights)
+dict(zip(adv_model.metrics_names,adv_model.evaluate(
+    {'input':x_test,
+     'label':np.array(y_test[int(1)],dtype='float32')},
+     verbose=int(0))))
+</script></div><br/> 
+    <h2>✒️ &nbsp; Models with Adversarial Regularization => CNN</h2>
+<div class='linked'><script type='text/x-sage'>      
+base_model=tf.keras.Sequential([
+    tf.keras.Input((img_size,img_size,int(3)),name='input'),
+    tf.keras.layers.Conv2D(int(32),(int(5),int(5)),padding='same'),
+    tf.keras.layers.Activation('relu'),
+    tf.keras.layers.MaxPooling2D(pool_size=(int(2),int(2))),
+    tf.keras.layers.Dropout(float(.25)),
+    tf.keras.layers.Conv2D(int(96),(int(5),int(5))),
+    tf.keras.layers.Activation('relu'),    
+    tf.keras.layers.MaxPooling2D(pool_size=(int(2),int(2))),
+    tf.keras.layers.Dropout(float(.25)),
+    tf.keras.layers.GlobalMaxPooling2D(),    
+    tf.keras.layers.Dense(int(256)),
+    tf.keras.layers.Activation('relu'),
+    tf.keras.layers.Dropout(float(.5)),
+    tf.keras.layers.Dense(num_classes,activation='softmax')
+])
+adv_config=nsl.configs\
+.make_adv_reg_config(multiplier=float(.2),adv_step_size=float(.05))
+adv_model=nsl.keras\
+.AdversarialRegularization(base_model,adv_config=adv_config)
+adv_model.compile(optimizer='adam',metrics=['accuracy'],
+                  loss='sparse_categorical_crossentropy')
+</script></div><br/> 
+<div class='linked'><script type='text/x-sage'>      
+history=adv_model.fit(
+    train,validation_data=valid,validation_steps=valid_steps,
+    verbose=int(2),epochs=int(3),callbacks=cb(model_weights));
+</script></div><br/> 
+<div class='linked'><script type='text/x-sage'>      
+keras_history_plot(history)
+adv_model.load_weights(model_weights)
+dict(zip(adv_model.metrics_names,adv_model.evaluate(
+    {'input':x_test,
+     'label':np.array(y_test[int(1)],dtype='float32')},
+     verbose=int(0))))
+</script></div><br/> 
+  </body>
+</html>

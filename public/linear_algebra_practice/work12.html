@@ -1,0 +1,418 @@
+<!DOCTYPE HTML>
+<html>
+  <head>
+    <meta charset='utf-8'>
+    <meta name='viewport' content='width=device-width'>
+    <title>📑 Linear Algebra Work 12</title>
+    <script src='https://sagecell.sagemath.org/static/embedded_sagecell.js'></script>
+    <script>$(function(){
+      sagecell.makeSagecell({inputLocation:'div.linked_sage',linked:true,evalButtonText:'Run Linked Sage Cells'});
+      sagecell.makeSagecell({inputLocation:'div.linked_python',linked:true,evalButtonText:'Run Linked Python Cells'});
+      sagecell.makeSagecell({inputLocation:'div.linked_r',linked:true,evalButtonText:'Run Linked R Cells'});
+      sagecell.makeSagecell({inputLocation:'div.sage',evalButtonText:'Run'});
+      sagecell.makeSagecell({inputLocation:'div.sage_html',evalButtonText:'Run HTML'});});
+    </script>
+  </head>
+  <style>
+    @import 'https://fonts.googleapis.com/css?family=Orbitron';
+    h1,h2 {color:#3636ff; font-family:Orbitron; text-shadow:5px 5px 5px #aaa;}
+    p,a {color:darkblue; font-size:110%; text-shadow:5px 5px 5px #aaa;}
+    .sagecell .CodeMirror-scroll {min-height:3em; max-height:70em;}
+    body {margin:5px 5px 5px 25px;}
+  </style>  
+  <body>
+    <h1>&#x1F4D1; &nbsp; Линейная алгебра. Практическая работа №12</h1>
+<a href='https://olgabelitskaya.gitlab.io/index.html'>&#x1F300; &nbsp; Homepage &nbsp; &nbsp;</a>
+<a href='https://olgabelitskaya.github.io/README.html'>&#x1F300; &nbsp; GitHub Pages &nbsp; &nbsp;</a>
+<a href='https://olgabelitskaya.gitlab.io/linear_algebra_practice/work11.html'>&#x1F300; &nbsp; Previous &nbsp; &nbsp;</a>
+<a href='https://olgabelitskaya.gitlab.io/linear_algebra_practice/work13.html'>&#x1F300; &nbsp; Next &nbsp; &nbsp;</a>
+<a href='https://www.instagram.com/olga.belitskaya/'>&#x1F300; &nbsp; Instagram Posts &nbsp; &nbsp;</a>
+<a href='https://www.pinterest.ru/olga_belitskaya/code-style/'>&#x1F300; &nbsp; Pinterest Posts</a>
+    <h1>Линейные пространства.</h1><h1>Линейные преобразования и операторы</h1>
+    <h2>1. Линейные пространства</h2>
+Линейное пространство $\mathbb{L(C)}$ над числовым полем $\mathbb{C}$ — 
+      это множество векторов $\mathbb{L}$, в котором введены две операции:<br/>
+- сложение элементов $x + y, \ \forall x, y \in \mathbb{L}$<br/>
+- умножение элемента на число $\alpha \cdot x, \forall \alpha \in \mathbb{C}, \forall x \in \mathbb{L}$<br/>
+причем выполнены следующие аксиомы:
+<p>$(1) \ \forall x, y \in \mathbb{L} : x + y = y + x$ (коммутативность сложения);</p>
+<p>$(2) \ \forall x, y, z \in \mathbb{L} : x + (y + z) = x + (y + z)$ (ассоциативность сложения);</p>
+<p>$(3) \ \exists 0 \in \mathbb{L} \ \forall x \in \mathbb{L} : x + 0 = x$ (существование нулевого вектора);</p>
+<p>$(4) \ \forall x \in \mathbb{L} \ \exists -x \in \mathbb{L} : x + (-x) = 0$ (существование противоположного вектора);</p>
+<p>$(5) \ \forall x \in \mathbb{L} : 1 \cdot x = x$ (существование единичного вектора);</p>
+<p>$(6) \ \forall \alpha, \beta \in \mathbb{C}, \forall x \in \mathbb{L} : 
+    (\alpha \cdot \beta) \cdot x = \alpha \cdot (\beta \cdot x)$;</p>
+<p>$(7) \ \forall \alpha \in \mathbb{C}, \forall x, y \in \mathbb{L} : 
+    \alpha \cdot (x + y) = \alpha \cdot x + \alpha \cdot y$ (дистрибутивность-1);</p>
+<p>$(8) \ \forall \alpha, \beta \in \mathbb{C}, \forall x \in \mathbb{L} : 
+    (\alpha + \beta) \cdot x = \alpha \cdot x + \beta \cdot x$ (дистрибутивность-2).</p>
+Простейшие свойства линейных пространств:<br/>
+1) нулевой элемент единственен;<br/>
+2) единичный элемент единственен;<br/>
+3) $\forall x, y, z \in \mathbb{L}: x + z = y + z \implies x = y$ и т.д.<br/>
+<p>Примеры</p>
+Декартова прямоугольная система координат<br/>
+<p>$\overrightarrow{0}\{0;0;0\}$ - нулевой вектор</p>
+<p>$\overrightarrow{i}\{1;0;0\}, \overrightarrow{j}\{0;1;0\}, 
+    \overrightarrow{k}\{0;0;1\}$ — единичные направляющие векторы координатных осей</p>
+<p>$\overrightarrow{v}\{x;y;z\} = x \cdot \overrightarrow{i} + y \cdot \overrightarrow{j} + z \cdot \overrightarrow{k}$</p>
+<p>$\{x;y;z\}$ - {абсцисса; ордината; аппликата}</p>
+<p>$\overrightarrow{v_{xy}}\{x;y;0\}$ - проекция $\overrightarrow{v}\{x;y;z\}$ на плоскость $Oxy$</p>
+В системах кординат углы между векторами $\overrightarrow{i}, 
+      \overrightarrow{j}, \overrightarrow{k}$ могут быть не прямыми, длины векторов могут быть $\neq 1$.<br/>
+Цилиндрическая система координат
+<p>$\begin{cases} x = r \cos \varphi \\ y = r \sin \varphi \\ z = h \end{cases}; \ 
+\begin{cases} r = \sqrt{x^2 + y^2} \\ 
+\cos \varphi = \frac{x}{\sqrt{x^2 + y^2}} \\ 
+\sin \varphi = \frac{y}{\sqrt{x^2 + y^2}} \\
+h = z \end{cases}$</p>
+Географические координаты (вариант сферических)
+<p>$\begin{cases} 
+x = r \cos \varphi \cos \vartheta \\
+y = r \sin \varphi \cos \vartheta \\
+z = r \sin \vartheta
+\end{cases}$</p>
+Векторы коллинеарны, если они лежат на параллельных прямых. <br/>
+Коллинеарные векторы с общим началом лежат на одной прямой.
+<p>$\overrightarrow{a}, \overrightarrow{b}$ - коллинеарны 
+    $\iff \exists \ \alpha, \beta \neq 0$ одновременно: 
+    $\alpha \overrightarrow{a} + \beta \overrightarrow{b} = \overrightarrow{0}$</p>
+Базис на плоскости — упорядоченный набор двух неколлинеарных векторов.<br/>
+Векторы компланарны, если они лежат в параллельных плоскостях.<br/>
+Компланарные векторы с общим началом лежат в одной плоскости.
+<p>$\overrightarrow{a}, \overrightarrow{b}, \overrightarrow{c}$ - компланарны 
+    $\iff \exists \ \alpha, \beta, \gamma \neq 0$ одновременно: 
+    $\alpha \overrightarrow{a} + \beta \overrightarrow{b} + \gamma \overrightarrow{c}= \overrightarrow{0}$</p>
+Базис в пространстве — упорядоченный набор трех некомпланарных векторов.<br/>
+Линейная комбинация векторов
+<p>$\alpha_1 \overrightarrow{x_1} + \alpha_2 \overrightarrow{x_2} + ... + \alpha_n \overrightarrow{x_n}$</p>
+Линейная комбинация называется тривиальной, если все ее коэффициенты равны нулю.
+<p>$0 \overrightarrow{x_1} + 0 \overrightarrow{x_2} + ... + 0 \overrightarrow{x_n} = \overrightarrow{0}$</p>
+Векторы линейно независимы, если нулевому вектору равна только их тривиальная линейная комбинация.<br/>
+Векторы линейно зависимы $\iff$ их смешанное произведение равно нулю.
+<p>$\overrightarrow{x}\{x_1;x_2;x_3\} \cdot 
+    \overrightarrow{y}\{y_1;y_2;y_3\} \cdot 
+    \overrightarrow{z}\{z_1;z_2;z_3\} = 
+    \begin{vmatrix} x_1 & x_2 & x_3 \\ y_1 & y_2 & y_3 \\ z_1 & z_2 & z_3 \end{vmatrix} = 0$</p>
+Базис линейного пространства - линейно независимый упорядоченный набор векторов, <br/>
+позволяющий любой вектор пространства представить в виде линейной комбинации этого набора (разложение по базису),<br/>
+причем коэффициенты в этом случае - координаты вектора.<br/>
+Разложение вектора по базису единственно.<br/>
+Размерность линейного пространства  = числу векторов базиса.<br/>
+Большее, чем размерность, количество векторов пространства всегда линейно зависимо.      
+    <p>Активируйте этот код перед использованием любых ячеек Linked Sage Cells</p>
+<div class='linked_sage'><script type='text/x-sage'>
+from sage.plot.plot3d.plot3d import axes
+l=['i','j','k','v','2i','2i+3j','3j','2k']
+s=6*[[0,0,0]]+[[2,0,0],[2,3,0]]
+k=[[1,0,0],[0,1,0],[0,0,1],[2,3,2],
+   [2,0,0],[2,3,0],[2,3,0],[2,3,2]]
+w=[1,1,1,3,2,2,2,2]
+o=[.9,.9,.9,.6,.3,.3,.3,.3]
+c=['#3636ff','#ff3636','#36ff36','#363636',
+   '#3636ff','#ff36ff','#ff3636','#36ff36']
+v=sum([arrow3d(s[i],k[i],color=c[i],width=w[i],opacity=o[i],mesh=True) 
+       for i in [0..7]])
+t=sum([text3d(l[i],[(s[i][j]+k[i][j])/2 for j in [0..2]],
+              color=c[i]).rotate((1.5,1.5,1.5),pi/12) 
+       for i in [0..7]])
+(v+t+axes(3,.5,color='black')).show()
+</script></div><br/>      
+<div class='linked_sage'><script type='text/x-sage'>
+i,j,k=vector(SR,[1,0,0]),vector(SR,[0,1,0]),vector(SR,[0,0,1]); 
+v=vector(SR,[2,3,2]); 2*i+3*j+2*k==v
+</script></div>
+    <p>Активируйте этот код перед использованием любых ячеек Linked Python Cells</p>
+<div class='linked_python'><script type='text/x-sage'>
+import numpy,sympy,sympy.vector,pylab
+sympy.init_printing(use_unicode=True)
+from mpl_toolkits.mplot3d import Axes3D
+fig=pylab.figure(figsize=(7,7))
+ax=fig.add_subplot(111,projection='3d')
+c=['#3636ff','#ff3636','#36ff36','#3636ff',
+   '#ff3636','#ff36ff','#36ff36','#363636']
+x0,y0,z0=[0,0,0,0,2,0,2,0],[0,0,0,0,0,0,3,0],[0,0,0,0,0,0,0,0]
+x,y,z=[1,0,0,2,0,2,0,2],[0,1,0,0,3,3,0,3],[0,0,1,0,0,0,2,2]
+a=[.8,.8,.8,.2,.2,.2,.2,.5]; alr=[.4,.4,.4,.2,.2,.1,.2,.1]
+l=[r'$i$',r'$j$',r'$k$',r'$2i$',r'$3j$',r'$2i+3j$',r'$2k$',r'$v$']
+[ax.quiver(x0[i],y0[i],z0[i],x[i],y[i],z[i],colors=c[i],
+           lw=5,arrow_length_ratio=alr[i],alpha=a[i],label=l[i]) 
+ for i in range(8)]
+ax.set_xlabel(r'$X$',fontsize=15)
+ax.set_ylabel(r'$Y$',fontsize=15)
+ax.set_zlabel(r'$Z$',fontsize=15)
+ax.set_xlim([0,3]); ax.set_ylim([0,3]); ax.set_zlim([0,3])
+ax.legend(fontsize=15,loc=2); pylab.show()
+</script></div><br/>
+<div class='linked_python'><script type='text/x-sage'>
+se=sympy.vector.CoordSys3D('se')
+v=2*se.i+3*se.j+2*se.k; display(v)
+[i,j,k]=[numpy.array([1,0,0]),numpy.array([0,1,0]),
+         numpy.array([0,0,1])]
+v=numpy.array([2,3,2]); 2*i+3*j+2*k==v
+</script></div>
+    <p>Активируйте этот код перед использованием любых ячеек Linked R Cells</p>
+<div class='linked_r'><script type='text/x-sage'>
+%%r
+library(Matrix)
+i<-c(1,0,0); j<-c(0,1,0); k<-c(0,0,1); 
+v<-c(2,3,2); v==2*i+3*j+2*k
+</script></div> 
+      <h2>2. Линейные преобразования</h2>
+В пространстве заданы два произвольных базиса $\overrightarrow{e_1}, \overrightarrow{e_2}, ...,  
+      \overrightarrow{e_n}$ и $\overrightarrow{f_1}, \overrightarrow{f_2}, ...,  \overrightarrow{f_n}$:
+<p>$\begin {cases}
+\overrightarrow{f_1} = c_{11}\overrightarrow{e_1} + c_{12}\overrightarrow{e_2} + ... +  c_{1n}\overrightarrow{e_n} \\
+\overrightarrow{f_2} = c_{21}\overrightarrow{e_1} + c_{22}\overrightarrow{e_2} + ... +  c_{2n} \overrightarrow{e_n} \\
+... \\
+\overrightarrow{f_n} = c_{n1}\overrightarrow{e_1} + c_{n2}\overrightarrow{e_2} + ... +  c_{nn} \overrightarrow{e_n}
+\end{cases}$</p>
+Коэффициенты уравнений - матрица перехода $C$ от первого базиса ко второму.<br/>
+Тогда матрица перехода от координат вектора относительно первого базиса к координатам относительно второго равна $(C^{-1})^T$<br/>
+<div class='linked_sage'><script type='text/x-sage'>
+cc=' '.join(list('c_%d%d'%(i,j) 
+            for i in (1..2) for j in (1..2)))
+C=matrix(SR,2,var(cc))
+for el in [C,C.det(),C.inverse(),(C^(-1)).transpose()]: 
+    pretty_print(el)
+cc=' '.join(list('c_%d%d'%(i,j) 
+            for i in (1..3) for j in (1..3)))
+C=matrix(SR,3,var(cc))
+ee=' '.join(list('e_%d%d'%(i,j) 
+            for i in (1..3) for j in (1..3)))
+E=matrix(SR,3,var(ee))
+ff=' '.join(list('f_%d%d'%(i,j) 
+            for i in (1..3) for j in (1..3)))
+F=matrix(SR,3,var(ff))
+pretty_print(C*E-F)
+</script></div><br/>
+<div class='linked_python'><script type='text/x-sage'>
+cc=' '.join(list('c_%d%d'%(i,j) 
+            for i in [1,2] for j in [1,2]))
+C=sympy.Matrix(int(2),int(2),sympy.symbols(cc))
+for el in [C,C.det(),C.inv(),(C^(-1)).transpose()]: 
+    display(el,15*'=-=')
+NC=numpy.matrix([[1,2],[3,4]])
+for el in [NC,numpy.linalg.inv(NC),
+           numpy.linalg.inv(NC).T]: 
+    print(el)
+</script></div><br/>  
+<div class='linked_r'><script type='text/x-sage'>
+%%r
+C<-matrix(c(1,2,3,4),2,2,byrow=TRUE)
+list(C,solve(C),t(solve(C)))
+</script></div><br/>
+Пример решения задачи с матрицей перехода 
+<p>$C: (\mathfrak{e_1},\mathfrak{e_2},\mathfrak{e_3}) \to (\mathfrak{f_1},\mathfrak{f_2},\mathfrak{f_3}) \\
+\begin{cases} \mathfrak{e_1} \{1;3;3\} \\ \mathfrak{e_2} \{-3;-3;-2\} \\ \mathfrak{e_3} \{-2;2;3\} \end {cases} \to 
+\begin {cases} \mathfrak{f_1} \{1;4;-2\} \\ \mathfrak{f_2} \{-2;-1;2\} \\ \mathfrak{f_3} \{4;1;-2\} \end{cases}$</p>
+<p>$\mathfrak{e} \{-19;7;16\} \to \mathfrak{f} \{x;y;z\}?$</p>
+<div class='linked_sage'><script type='text/x-sage'>
+E=matrix(SR,3,[1,3,3,-3,-3,-2,-2,2,3]) 
+F=matrix(SR,3,[1,4,-2,-2,-1,2,4,1,-2])
+e=matrix(SR,3,[-19,7,16])
+C=E.solve_left(F); f=(C^(-1)).transpose()*e
+for el in [C,C*E==F,f]: pretty_print(el)
+</script></div><br/>
+<div class='linked_python'><script type='text/x-sage'>
+E=sympy.Matrix(int(3),int(3),[1,3,3,-3,-3,-2,-2,2,3])
+F=sympy.Matrix(int(3),int(3),[1,4,-2,-2,-1,2,4,1,-2])
+e=sympy.Matrix(int(3),int(1),[-19,7,16])
+C=F*E^(-1); f=(C^(-1)).transpose()*e
+for el in [C,C*E==F,f]: display(el)
+E=numpy.matrix([[1,3,3],[-3,-3,-2],[-2,2,3]])
+F=numpy.matrix([[1,4,-2],[-2,-1,2],[4,1,-2]])
+C=F*numpy.linalg.inv(E)
+e=numpy.matrix([[-19],[7],[16]])
+f=numpy.linalg.inv(C).T*e
+for el in [C,round(C*E,0)==F,f]: print(el)
+</script></div><br/>  
+<div class='linked_r'><script type='text/x-sage'>
+%%r
+E<-matrix(c(1,3,3,-3,-3,-2,-2,2,3),3,3,byrow=TRUE)
+F<-matrix(c(1,4,-2,-2,-1,2,4,1,-2),3,3,byrow=TRUE)
+e<-matrix(c(-19,7,16),3,1)
+C<-F%*%solve(E); f<-t(solve(C))%*%e
+for (el in list(C,round(C%*%E)==FALSE)) {print(el)}
+f
+</script></div>
+      <h2>3. Линейные операторы</h2>
+Оператор преобразования одного линейного пространства в другое
+<p>$A: V \to W$</p>
+<p>$\forall x \in V \ \exists y \in W: y = Ax$</p>
+Линейный оператор
+<p>1) $A(x_1 + x_2) = Ax_1 + Ax_2$</p>
+<p>2) $A(\lambda x) = \lambda (Ax)$</p>
+Матрица линейного оператора в старом базисе
+<p>$A = C^{-1} * \tilde{A} * C$</p>
+Матрица линейного оператора в новом базисе
+<p>$\tilde{A} = C * A * C^{-1}$</p>
+Пример решения задачи с матрицей линейного оператора
+<p>$A\mathfrak{e_1=f_1}: \mathfrak{e_1}\{1;3;3\}; \mathfrak{f_1} \{1;4;-2\} \\ 
+    A\mathfrak{e_2=f_2}: \mathfrak{e_2}\{-3;-3;-2\}; \mathfrak{f_2} \{-2;-1;2\} \\ 
+    A\mathfrak{e_3=f_3}: \mathfrak{e_3}\{-2;2;3\}; \mathfrak{f_3} \{4;1;-2\}$</p>
+<p>$A\mathfrak{e=f}: \mathfrak{e}\{-19;7;16\}; \mathfrak{f} \{x;y;z\}?$</p>
+<div class='linked_sage'><script type='text/x-sage'>
+a=[[1,3,3,0,0,0,0,0,0],[-3,-3,-2,0,0,0,0,0,0],
+   [-2,2,3,0,0,0,0,0,0],[0,0,0,1,3,3,0,0,0],
+   [0,0,0,-3,-3,-2,0,0,0],[0,0,0,-2,2,3,0,0,0],
+   [0,0,0,0,0,0,1,3,3],[0,0,0,0,0,0,-3,-3,-2],
+   [0,0,0,0,0,0,-2,2,3]]
+a=matrix(SR,a)
+b=matrix(SR,9,[1,-2,4,4,-1,1,-2,2,-2])
+A=matrix(SR,3,[x[0] for x in a.solve_right(b)])
+e1=matrix(SR,3,[1,3,3]); f1=matrix(SR,3,[1,4,-2])
+e2=matrix(SR,3,[-3,-3,-2]); f2=matrix(SR,3,[-2,-1,2])
+e3=matrix(SR,3,[-2,2,3]); f3=matrix(SR,3,[4,1,-2])
+e=matrix(SR,3,[-19,7,16]); f=A*e
+for el in [f,(A*e1==f1,A*e2==f2,A*e3==f3)]: 
+    pretty_print(el)
+</script></div><br/>
+<div class='linked_python'><script type='text/x-sage'>
+A11,A12,A13,A21,A22,A23,A31,A32,A33=\
+sympy.symbols('A11,A12,A13,A21,A22,A23,A31,A32,A33')
+a=[[1,3,3,0,0,0,0,0,0,1],[-3,-3,-2,0,0,0,0,0,0,-2],
+   [-2,2,3,0,0,0,0,0,0,4],[0,0,0,1,3,3,0,0,0,4],
+   [0,0,0,-3,-3,-2,0,0,0,-1],[0,0,0,-2,2,3,0,0,0,1],
+   [0,0,0,0,0,0,1,3,3,-2],[0,0,0,0,0,0,-3,-3,-2,2], 
+   [0,0,0,0,0,0,-2,2,3,-2]]
+system=sympy.Matrix(a)
+A=sympy.solve_linear_system(system,\
+A11,A12,A13,A21,A22,A23,A31,A32,A33)
+A=sympy.Matrix(int(3),int(3),[A[x]\
+for x in [A11,A12,A13,A21,A22,A23,A31,A32,A33]])
+e1=sympy.Matrix(int(3),int(1),[1,3,3])
+f1=sympy.Matrix(int(3),int(1),[1,4,-2])
+e2=sympy.Matrix(int(3),int(1),[-3,-3,-2])
+f2=sympy.Matrix(int(3),int(1),[-2,-1,2])
+e3=sympy.Matrix(int(3),int(1),[-2,2,3])
+f3=sympy.Matrix(int(3),int(1),[4,1,-2])
+e=sympy.Matrix(int(3),int(1),[-19,7,16])
+f=A*e
+for el in [f,(A*e1==f1,A*e2==f2,A*e3==f3)]: 
+    display(el)
+</script></div><br/>
+<div class='linked_python'><script type='text/x-sage'>
+a=[[1,3,3,0,0,0,0,0,0],[-3,-3,-2,0,0,0,0,0,0],
+   [-2,2,3,0,0,0,0,0,0],[0,0,0,1,3,3,0,0,0],
+   [0,0,0,-3,-3,-2,0,0,0],[0,0,0,-2,2,3,0,0,0],
+   [0,0,0,0,0,0,1,3,3],[0,0,0,0,0,0,-3,-3,-2],
+   [0,0,0,0,0,0,-2,2,3]]
+a=numpy.matrix(a)
+b=numpy.matrix([1,-2,4,4,-1,1,-2,2,-2]).T
+A=numpy.matrix(numpy.linalg.solve(a,b)).reshape(3,3)
+e1=numpy.matrix([1,3,3]).T; f1=numpy.matrix([1,4,-2]).T
+e2=numpy.matrix([-3,-3,-2]).T; f2=numpy.matrix([-2,-1,2]).T
+e3=numpy.matrix([-2,2,3]).T; f3=numpy.matrix([4,1,-2]).T
+e=numpy.matrix([-19,7,16]).T; f=A*e
+ar=[round(A*e1)==f1,round(A*e2)==f2,round(A*e3)==f3]
+for el in [f,numpy.array(ar).reshape(3,3)]: print(el)
+</script></div><br/>
+<div class='linked_r'><script type='text/x-sage'>
+%%r
+a<-matrix(c(1,3,3,0,0,0,0,0,0,
+            -3,-3,-2,0,0,0,0,0,0,
+            -2,2,3,0,0,0,0,0,0,
+            0,0,0,1,3,3,0,0,0,
+            0,0,0,-3,-3,-2,0,0,0,
+            0,0,0,-2,2,3,0,0,0,
+            0,0,0,0,0,0,1,3,3,
+            0,0,0,0,0,0,-3,-3,-2,
+            0,0,0,0,0,0,-2,2,3),
+          9,9,byrow=TRUE)
+b<-matrix(c(1,-2,4,4,-1,1,-2,2,-2),9,1)
+A<-matrix(solve(a,b),3,3,byrow=TRUE)
+e1<-matrix(c(1,3,3),3,1); f1<-matrix(c(1,4,-2),3,1)
+e2<-matrix(c(-3,-3,-2),3,1); f2<-matrix(c(-2,-1,2),3,1)
+e3<-matrix(c(-2,2,3),3,1); f3<-matrix(c(4,1,-2),3,1)
+e<-matrix(c(-19,7,16),3,1); f<-A%*%e
+print(c(round(A%*%e1)==f1,
+        round(A%*%e2)==f2,
+        round(A%*%e3)==f3))
+f
+</script></div>
+Пример решения задачи с матрицей перехода и матрицей линейного оператора
+<p>$C: (\mathfrak{e_1},\mathfrak{e_2},\mathfrak{e_3}) \to (\mathfrak{f_1},\mathfrak{f_2},\mathfrak{f_3}) \\ 
+\begin{cases} f_1 = e_1+ e_2 + e_3 \\ f_2 = 2 e_1+ 3 e_2 + 4 e_3 \\ f_3 = 3 e_1+ 5 e_2 + 8 e_3 \end{cases}$</p>
+<p>$A = \begin{pmatrix} -3 & -4 & -1 \\ 4 & -3 & -3 \\ -3 & 2 & -6 \end{pmatrix} \to \tilde{A} ?$</p>     
+<div class='linked_sage'><script type='text/x-sage'>
+A=matrix(SR,3,[-3,-4,-1,4,-3,-3,-3,2,-6])
+C=matrix(SR,3,[1,1,1,2,3,4,3,5,8])
+AT=C*A*C.inverse(); AT
+</script></div><br/>
+<div class='linked_python'><script type='text/x-sage'>
+A=numpy.matrix([-3,-4,-1,4,-3,-3,-3,2,-6]).reshape(3,3)
+C=numpy.matrix([1,1,1,2,3,4,3,5,8]).reshape(3,3)
+print(C*A*numpy.linalg.inv(C))
+A=sympy.Matrix([[-3,-4,-1],[4,-3,-3],[-3,2,-6]])
+C=sympy.Matrix([[1,1,1],[2,3,4],[3,5,8]])
+C*A*C.inv()
+</script></div><br/> 
+<div class='linked_r'><script type='text/x-sage'>
+%%r
+A<-matrix(c(-3,-4,-1,4,-3,-3,-3,2,-6),3,3,byrow=TRUE)
+C<-matrix(c(1,1,1,2,3,4,3,5,8),3,3,byrow=TRUE)
+C%*%A%*%t(matrix(solve(C),3,3,byrow=TRUE))
+</script></div>     
+    <h2>4. Собственные значения и собственные векторы линейного оператора</h2>
+Собственный ненулевой вектор $\overline{u}\{x;y;z\}$ и соответствующее ему собственное значение $\lambda$ для матрицы $A$
+<p>$A \overline{u} = \lambda \overline{u} \iff 
+\begin{pmatrix} a_{11} & a_{12} & a_{13} \\ a_{21} & a_{22} & a_{23} \\ 
+    a_{31} & a_{32} & a_{33} \end{pmatrix} * 
+\begin{pmatrix} x \\ y \\ z \end{pmatrix} = \begin{pmatrix} \lambda x \\ 
+    \lambda y \\ \lambda z \end{pmatrix} \iff 
+\begin{vmatrix} a_{11}-\lambda & a_{12} & a_{13} \\ a_{21} & a_{22}-\lambda & a_{23} \\ 
+    a_{31} & a_{32} & a_{33}-\lambda \end{vmatrix} = 0$</p>
+<div class='linked_sage'><script type='text/x-sage'>
+A=matrix(SR,3,[-4,-3,-5,5,4,5,-7,-7,-6])
+var('t')
+At=matrix([[-4-t,-3,-5],[5,4-t,5],[-7,-7,-6-t]])
+for el in [solve(At.det(),t),A.eigenvalues(),
+           A.eigenvectors_right()]: 
+    pretty_print(el)
+</script></div><br/>
+<div class='linked_python'><script type='text/x-sage'>
+A=sympy.Matrix([[-4,-3,-5],[5,4,5],[-7,-7,-6]])
+t=sympy.symbols('t')
+At=sympy.Matrix([[-4-t,-3,-5],[5,4-t,5],[-7,-7,-6-t]])
+for el in [sympy.solve(At.det(),t),
+           A.eigenvals(),A.eigenvects()]: 
+    display(el)
+</script></div><br/> 
+<div class='linked_python'><script type='text/x-sage'>
+A=numpy.matrix([-4,-3,-5,5,4,5,-7,-7,-6]).reshape(3,3)
+print(numpy.linalg.eigvals(A))
+for i in range(3): 
+    print(round(numpy.linalg.eig(A)[1])[:,i])
+</script></div><br/> 
+<div class='linked_r'><script type='text/x-sage'>
+%%r
+A<-matrix(c(-4,-3,-5,5,4,5,-7,-7,-6),3,3,byrow=TRUE)
+print(eigen(A)$values); round(eigen(A)$vectors)
+</script></div>      
+    <h2>5. Задание</h2>
+$1.$ Линейный оператор преобразует векторы следующим образом:
+<p>$A\mathfrak{e_1=f_1}: \mathfrak{e_1}\{-2;-2;-3\}; \mathfrak{f_1} \{-1;3;4\} \\ 
+A\mathfrak{e_2=f_2}: \mathfrak{e_2}\{-1;-1;1\}; \mathfrak{f_2} \{1;-1;-3\} \\ 
+A\mathfrak{e_3=f_3}: \mathfrak{e_3}\{2;3;-2\}; \mathfrak{f_3} \{1;4;-2\}$</p>            
+В какой вектор этот оператор переведет $\mathfrak{e}?$          
+<p>$A\mathfrak{e=f}: \mathfrak{e}\{-17;-20;-3\}; \mathfrak{f} \{x;y;z\}?$</p>   
+$2.$ Инициировать случайную матрицу целых чисел,<br/>
+найти для нее собственные вектора и собственные значения,<br/>
+используя SageMath, Numpy, SymPy или R.<br/>
+<div class='linked_sage'><script type='text/x-sage'>
+
+</script></div><br/>
+<div class='linked_python'><script type='text/x-sage'>
+
+</script></div><br/>  
+<div class='linked_r'><script type='text/x-sage'>
+%%r
+
+</script></div>
+    <h2>6. Отдельная ячейка для дополнительных экспериментов</h2>  
+<div class='sage'><script type='text/x-sage'>
+
+</script></div>
+  </body>
+</html> 

@@ -1,0 +1,257 @@
+<!DOCTYPE HTML>
+<html>
+  <head>
+    <meta charset='utf-8'>
+    <meta name='viewport' content='width=device-width'>
+    <title>📑 File Exchange Workout 01</title>
+    <script src='https://sagecell.sagemath.org/static/embedded_sagecell.js'></script>
+    <script>$(function () {
+        sagecell.makeSagecell({inputLocation:'div.sagehtml',evalButtonText:'run'}); });
+    </script>
+  </head>
+  <style>
+  @import 'https://fonts.googleapis.com/css?family=Akronim';
+  h1,h2,h3,h4 {color:darkmagenta; font-family:Akronim; 
+               text-shadow:4px 4px 4px #aaa; padding-left:20px;}
+  #iter_steps,#file_1,#file_2 {padding-left:20px; background:whitesmoke; 
+                              border:double slategray;}
+  p,a {color:slategray; font-size:110%; text-shadow:4px 4px 4px #aaa;}
+  body {margin:5px 5px 5px 20px; background:whitesmoke; 
+        border:double slategray;}
+  .sagecell .CodeMirror-scroll {min-height:3em; max-height:90em;}
+  </style>
+  <body>
+    <div class='navbar'>
+    &nbsp; &nbsp; &nbsp; &nbsp;
+    <a href='https://olgabelitskaya.gitlab.io/index.html'>🌐 &nbsp; Homepage &nbsp; &nbsp;</a>
+    &nbsp; &nbsp; &nbsp; &nbsp;
+    <a href='https://olgabelitskaya.gitlab.io/workout/index.html'>🌐 &nbsp; Workout List</a>
+    &nbsp; &nbsp; &nbsp; &nbsp;
+    <a href='https://olgabelitskaya.github.io/README.html'>🌐 &nbsp; GitHub Pages &nbsp; &nbsp;</a>
+    &nbsp; &nbsp; &nbsp; &nbsp; 
+    <a href='https://www.instagram.com/olga.belitskaya/'>🌐 &nbsp; Instagram Posts &nbsp; &nbsp;</a> 
+    &nbsp; &nbsp; &nbsp; &nbsp;    
+    <a href='https://www.pinterest.ru/olga_belitskaya/code-style/'>🌐 &nbsp; Pinterest Posts</a>
+    </div><br/>
+    <h1>📑 File Exchange Workout 01</h1>
+    <h2>JavaScript & Text Areas</h2>
+<div class='sagehtml'><script type='text/x-sage'>
+%%html
+<textarea id='input_text' style='text-align:left; width:300px; height:60px;'>
+Type text raws here.
+steps,file1,file2
+30,1,2
+They will be written into `demo.txt`.</textarea> 
+<br/><button id='write_text' style='width:306px'>
+Write `demo.txt`</button>
+<a download='demo.txt' id='download_text' style='padding-left:70px; display:none'>
+Download `demo.txt`</a>
+<script>
+(function(){
+var textFile=null,
+  makeTextFile=function (text) {
+    var data=new Blob([text],{type:'text/plain'});
+    if (textFile!==null){window.URL.revokeObjectURL(textFile);}
+    textFile=window.URL.createObjectURL(data);
+    return textFile;};
+  var create=document.getElementById('write_text'),
+      textbox=document.getElementById('input_text');
+  create.addEventListener('click',function(){
+    var link=document.getElementById('download_text');
+    link.href=makeTextFile(textbox.value);
+    link.style.display='block';},false);
+})();
+</script></div><br/>
+    <h2>JavaScript & Text Files</h2>
+<div class='sagehtml'><script type='text/x-sage'>
+%%html
+<table>
+    <tr><td>Text to Save:</td></tr>
+    <tr><td colspan='3'>
+      <textarea id='inputTextToSave' cols='80' rows='5'></textarea></td></tr>
+    <tr><td>File Name to Save:</td>
+        <td><input id='inputFileNameToSave' style='width:200px;'></input></td>
+        <td><button onclick='saveTextAsFile()' style='width:200px;'>
+            Save Text to File</button></td></tr>
+    <tr><td>File to Load:</td>
+        <td><input type='file' id='inputFileToLoad'></td>
+        <td><button onclick='loadFileAsText()' style='width:200px;'>
+            Load File as Text</button><td></tr>
+</table>
+<script type='text/javascript'>
+function saveTextAsFile(){
+    var textToSave=document.getElementById('inputTextToSave').value;
+    var textToSaveAsBlob=new Blob([textToSave],{type:'text/plain'});
+    var textToSaveAsURL=window.URL.createObjectURL(textToSaveAsBlob);
+    var fileNameToSaveAs=document.getElementById('inputFileNameToSave').value;
+    var downloadLink=document.createElement('a');
+    downloadLink.download=fileNameToSaveAs;
+    downloadLink.innerHTML='Download File';
+    downloadLink.href=textToSaveAsURL;
+    downloadLink.onclick=destroyClickedElement;
+    document.body.appendChild(downloadLink); 
+    downloadLink.click();};
+function destroyClickedElement(event){
+    document.body.removeChild(event.target);};
+function loadFileAsText(){
+    var fileToLoad=document.getElementById('inputFileToLoad').files[0];
+    var fileReader=new FileReader();
+    fileReader.onload=function(fileLoadedEvent) {
+        var textFromFileLoaded=fileLoadedEvent.target.result;
+        document.getElementById('inputTextToSave').value=textFromFileLoaded;};
+    fileReader.readAsText(fileToLoad,'UTF-8');}
+</script></div><br/>
+    <h2>JSON Local Storage</h2>
+<div class='sagehtml'><script type='text/x-sage'>
+%%html
+<p id='local_storage'></p>
+<script>
+var myObj,myJSON,text,obj;
+myObj={'iter_steps':document.getElementById('iter_steps').value,
+       'file_1':document.getElementById('file_1').value,
+       'file_2':document.getElementById('file_2').value};
+myJSON=JSON.stringify(myObj);
+localStorage.setItem('testJSON',myJSON);
+text=localStorage.getItem('testJSON');
+obj=JSON.parse(text);
+document.getElementById('local_storage').innerHTML=obj.iter_steps;
+</script></div><br/>
+    <h2>Inputs & IPython HTML</h2>
+<div class='sagehtml'><script type='text/x-sage'>
+from IPython.display import HTML,display
+html_str="""
+<br/><input style='width:35px;' type='number' 
+id='iter_stepspy' value=30 min=10 max=100> <= steps</input>
+<br/><br/><input style='width:35px;' type='number' 
+id='file_1py' value=1 min=1 max=10> <= file #1</input>
+<br/><br/><input style='width:35px;' type='number' 
+id='file_2py' value=2 min=1 max=10> <= file #2</input>"""
+display(HTML(html_str))
+def get_pyjs_value(input_id):
+    randi=randint(1,100)
+    js1="""<script>function fun"""
+    js2="""() {var v=document.getElementById('"""
+    js3="""py').value; document.getElementById('value"""
+    js4="""').innerHTML=v;}<"""+"""/script>"""
+    html1="""<br/>click to get: <button style='width:150px;' id='value"""
+    html2="""' onclick='fun"""
+    html3="""()'>the value of </button> """+input_id+"""<br/>"""
+    html_str=html1+str(randi)+html2+str(randi)+html3+\
+             js1+str(randi)+js2+input_id+js3+str(randi)+js4
+    display(HTML(html_str))
+idx=['iter_steps','file_1','file_2']
+for i in range(3): get_pyjs_value(idx[i])
+</script></div><br/>
+    <h2>Input HTML Elements</h2>
+ >>>>> <input style='width:35px;' type='number' id='iter_steps' value=30 min=10 max=100> <= steps</input>
+ >>>>> <input style='width:35px;' type='number' id='file_1' value=1 min=1 max=10> <= file #1</input>
+ >>>>> <input style='width:35px;' type='number' id='file_2' value=2 min=1 max=10> <= file #2</input>
+    <h2>Values of HTML Elements</h2>
+<div class='sagehtml'><script type='text/x-sage'>
+display(html('<p>current values:</p>'))
+def get_html_value(html_id,n):
+    html_str="<script>var v=document.getElementById('"+\
+             html_id+"').value; document.getElementById('demo"+\
+             str(n)+"').innerHTML=v;<"+\
+             "/script><text id='demo"+str(n)+"'><"+"/text>"
+    display(html(html_str))
+idx=['iter_steps','file_1','file_2']
+for i in range(3): get_html_value(idx[i],i)
+</script></div><br/>
+    <h2>Numpy Interpolation</h2>
+<div class='sagehtml'><script type='text/x-sage'>
+import warnings,urllib,numpy as np
+from skimage import io,transform
+warnings.filterwarnings('ignore')
+def load_img(file_path,file_name,img_size):
+    img=io.imread(file_path+file_name)
+    img=transform.resize(img,[img_size,img_size])
+    return img[:,:,:3]/255
+def interpolate_hypersphere(v1,v2,steps):
+    v1norm=np.linalg.norm(v1); v2norm=np.linalg.norm(v2)
+    vectors=[]; v2normalized=v2*(v1norm/v2norm)
+    for step in range(steps):
+        interpolated=v1+(v2normalized-v1)*step/(steps-int(1))
+        interpolated_norm=np.linalg.norm(interpolated)
+        interpolated_normalized=interpolated*(v1norm/interpolated_norm)
+        vectors.append(interpolated_normalized)
+    return np.array(vectors)*255
+file_path1='https://olgabelitskaya.gitlab.io/workout/'
+file_path2='https://raw.githubusercontent.com/OlgaBelitskaya/data/main/decors/'
+file_url='file_exchange_01.html'
+#steps_value="id='iter_steps' value="
+#file1_value="id='file_1' value="
+#file2_value="id='file_2' value="
+#def get_value(file_path,file_url,html_value):
+#    input_file=urllib.request.urlopen(file_path+file_url)
+#    html_str=input_file.read()
+#    n=html_str.decode().find(html_value)+len(html_value)
+#    return int(html_str.decode()[n:n+2])
+steps=30 #get_value(file_path1,file_url,steps_value)
+file1=1 #get_value(file_path1,file_url,file1_value)
+file2=2 #get_value(file_path1,file_url,file2_value)
+img_size=400
+file_name1='00_00_%03d'%(file1)+'.png'
+file_name2='00_00_%03d'%(file2)+'.png'
+img1=load_img(file_path2,file_name1,img_size)
+img2=load_img(file_path2,file_name2,img_size)
+imgs=np.vstack([interpolate_hypersphere(img1,img2,steps),
+                interpolate_hypersphere(img2,img1,steps)])
+animate([matrix_plot(imgs[i],transparent=True,frame=False,
+                     figsize=(3,3)) for i in range(2*steps)])
+</script></div><br/>
+<div class='sagehtml'><script type='text/x-sage'>
+import warnings,numpy as np
+from skimage import io,transform
+warnings.filterwarnings('ignore')
+def load_img(file_path,file_name,img_size):
+    img=io.imread(file_path+file_name)
+    img=transform.resize(img,[img_size,img_size])
+    return img[:,:,:3]/255
+def interpolate_hypersphere(v1,v2,steps):
+    v1norm=np.linalg.norm(v1); v2norm=np.linalg.norm(v2)
+    vectors=[]; v2normalized=v2*(v1norm/v2norm)
+    for step in range(steps):
+        interpolated=v1+(v2normalized-v1)*step/(steps-int(1))
+        interpolated_norm=np.linalg.norm(interpolated)
+        interpolated_normalized=interpolated*(v1norm/interpolated_norm)
+        vectors.append(interpolated_normalized)
+    return np.array(vectors)*255
+@interact
+def _vector(file1=[1,2,..,5],file2=[11,12,..,15],
+            steps=list(range(20,100,10)),img_size=[300,350,400]):
+    file_path='https://raw.githubusercontent.com/OlgaBelitskaya/data/main/decors/'
+    file_name1='00_00_%03d'%(file1)+'.png'
+    file_name2='00_00_%03d'%(file2)+'.png'
+    img1=load_img(file_path,file_name1,img_size)
+    img2=load_img(file_path,file_name2,img_size)
+    imgs=np.vstack([interpolate_hypersphere(img1,img2,steps),
+                    interpolate_hypersphere(img2,img1,steps)])
+    animate([matrix_plot(imgs[i],frame=False,transparent=True,figsize=3) 
+             for i in range(2*steps)]).show()
+</script></div><br/>
+    <h2>Image Processing</h2>
+<div class='sagehtml'><script type='text/x-sage'>
+import warnings; warnings.filterwarnings('ignore')
+from skimage import io,color,measure
+@interact
+def _vector(file=slider([1,2,..,24],default=16),
+            cm=slider(['ocean','cool','hsv','gnuplot2','terrain',
+                       'flag','winter','spring','summer','autumn'],default='hsv'),
+            level=slider([round(.9-.03*i,2) for i in range(15)],default=.81)):
+    file_path='https://raw.githubusercontent.com/OlgaBelitskaya/data/main/decors/'
+    file_name='00_00_%03d'%(file)+'.png'
+    img=io.imread(file_path+file_name); level=float(level)
+    gray_img=color.colorconv.rgb2gray(
+        color.colorconv.rgba2rgb(img))
+    contours=measure.find_contours(gray_img,level)
+    n=len(contours)
+    p=sum([list_plot(list(zip(contours[i][:,1],contours[i][:,0])),
+                     color=colormaps[cm](i/n)[:3],plotjoined=True,
+                     flip_y=True,alpha=.7) for i in range(n)])
+    g=multi_graphics([matrix_plot(img/255),p])
+    g.show(frame=False,axes=False,aspect_ratio=1,transparent=True,
+           xmin=0,ymin=0,xmax=img.shape[1],ymax=img.shape[0])
+</script></div><br/>
+  </body>
+</html>
