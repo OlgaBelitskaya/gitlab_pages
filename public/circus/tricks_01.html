@@ -34,8 +34,8 @@
     <h2>#1 Coordinate Interpolation</h2>
 <div class='trick'><script type='text/x-sage'>
 import numpy as np; from skimage import io,transform
-file_path='https://olgabelitskaya.gitlab.io/images/'
-file1,file2='03_012.png','03_015.png'
+file_path='https://raw.githubusercontent.com/OlgaBelitskaya/data/main/patterns/'
+file1,file2='01_01_001.png','01_01_002.png'
 def preprocess_img(file1,file2,file_path=file_path):
     img1,img2=io.imread(file_path+file1),io.imread(file_path+file2)
     imgbw1,imgbw2=np.ones(img1.shape[:2]),np.ones(img2.shape[:2])
