@@ -62,6 +62,8 @@ tflite_super_model=converter.convert()
 with tf.io.gfile.GFile('ESRGAN.tflite','wb') as f:
     f.write(tflite_super_model)
 esrgan_model_path='./ESRGAN.tflite'
+from IPython.display import display,HTML
+HTML('<style>.sagecell_input {text-shadow:4px 4px 4px #aaa;}</style>')
 </script></div><br/>
 <div class='linked'><script type='text/x-sage'>      
 def pd_style():
