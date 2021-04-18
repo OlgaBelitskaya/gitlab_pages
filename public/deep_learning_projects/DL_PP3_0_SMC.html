@@ -113,7 +113,7 @@ def h5file2data(h5file,cmap,img_size,resize=True):
                     columns=['train','valid','test'],
                     index=['image shape','image type',
                            'label shape','label type'])
-    display.display(df)
+    display(df)
     pretty_print('distribution of labels: ')
     idx=['labels %d'%(i+int(1)) for i in range(labels.shape[int(0)])]
     df=pd.DataFrame(labels,index=idx).T

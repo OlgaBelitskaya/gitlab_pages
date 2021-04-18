@@ -202,6 +202,7 @@ def vgg19model():
 vgg19model=vgg19model()
 </script></div><br/>
 <div class='linked'><script type='text/x-sage'>
+fw='/tmp/checkpoint'
 checkpointer=tkc.ModelCheckpoint(
     filepath=fw,verbose=int(2),save_weights_only=True,
     monitor='val_accuracy',mode='max',save_best_only=True)
