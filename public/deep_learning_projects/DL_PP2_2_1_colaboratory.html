@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<meta charset='utf-8'>
+<style>
+  @import 'https://fonts.googleapis.com/css?family=Akronim';
+  .h1 {font-family:Akronim; font-size:160%; text-shadow:3px 3px 3px #aaa;}
+  a {color:slategray; font-size:110%; text-shadow:3px 3px 3px #aaa;}
+  body {max-width:95%; margin:5px 5px 5px 15px; padding: 0 1em;}
+</style>
+<body>
+  <div class='navbar'>
+    <a href='https://olgabelitskaya.gitlab.io/index.html'>&#x1F300; &nbsp; Homepage &nbsp; &nbsp;</a>
+    <a href='https://olgabelitskaya.gitlab.io/deep_learning_projects/index.html'>
+    &#x1F300; &nbsp; Project List &nbsp; &nbsp;</a>
+    <a href='https://olgabelitskaya.gitlab.io/deep_learning_projects/DL_PP2_2_SMC.html'>
+    &#x1F300; &nbsp; Main &nbsp; &nbsp;</a>
+    <a href='https://olgabelitskaya.gitlab.io/deep_learning_projects/DL_PP3_0_SMC.html'>
+    &#x1F300; &nbsp; Next &nbsp; &nbsp;</a><br/>
+    <a href='https://olgabelitskaya.github.io/README.html'>&#x1F300; &nbsp; GitHub Pages &nbsp; &nbsp;</a>
+    <a href='https://www.instagram.com/olga.belitskaya/'>&#x1F300; &nbsp; Instagram Posts &nbsp; &nbsp;</a>
+    <a href='https://www.pinterest.ru/olga_belitskaya/code-style/'>&#x1F300; &nbsp; Pinterest Posts</a><br/>
+  </div>
+  <h1 class='h1' id='colored_header1'>📑  Deep Learning. Practice Project 2_2: Image Generation. Gist 1</h1>
+<script src='https://gist.github.com/OlgaBelitskaya/36346f76a2bcc12a884e65ed8e969fd1.js'></script>
+<script type='module'>
+var tc=setInterval(function() {
+  var doc1=document.getElementById('colored_header1');
+  var now=Math.floor((new Date().getTime()%(1000*60))/1000);
+  var col='rgb('+(10+Math.abs(245-8*now))+',0,'+(255-Math.abs(245-8*now))+')';
+  doc1.style.color=col}, 1000);
+</script>
+</body>
