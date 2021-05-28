@@ -1,0 +1,152 @@
+<!DOCTYPE HTML>
+<html>
+  <head>
+    <meta charset='utf-8'>
+    <meta name='viewport' content='width=device-width'>
+    <title>🏙 DB PP2_0 SMC</title>
+    <script src='https://sagecell.sagemath.org/static/embedded_sagecell.js'></script>
+    <script>$(function(){sagecell.makeSagecell(
+        {inputLocation:'div.linked',linked:true,evalButtonText:'run linked cells'});});
+    </script>
+  </head>
+  <style>
+    @import 'https://fonts.googleapis.com/css?family=Akronim|Lobster';
+    h1,h2,th {color:#348ABD; font-family:Akronim; font-size:120%; text-shadow:4px 4px 4px #aaa;}
+    p,a {color:slategray; font-family:Lobster; font-size:120%; text-shadow:4px 4px 4px #aaa;}
+    .sagecell .CodeMirror-scroll {min-height:3em; max-height:70em;}
+    body {margin:5px 5px 5px 15px;}
+  </style>  
+  <body>
+    <h1>📑 &nbsp; Data Building. Practice Project 2_0: File Manipulations</h1>
+<a href='https://olgabelitskaya.gitlab.io/index.html'>&#x1F300; &nbsp; Homepage &nbsp; &nbsp;</a>
+<a href='https://olgabelitskaya.gitlab.io/data_building_projects/index.html'>
+&#x1F300; &nbsp; Project List &nbsp; &nbsp;</a>
+<a href='https://olgabelitskaya.github.io/README.html'>&#x1F300; &nbsp; GitHub Pages &nbsp; &nbsp;</a>
+<a href='https://olgabelitskaya.gitlab.io/data_building_projects/DB_PP0_0_SMC.html'>
+&#x1F300; &nbsp; Previous &nbsp; &nbsp;</a>
+<a href='https://www.instagram.com/olga.belitskaya/'>&#x1F300; &nbsp; Instagram Posts &nbsp; &nbsp;</a>
+<a href='https://www.pinterest.ru/olga_belitskaya/code-style/'>&#x1F300; &nbsp; Pinterest Posts</a><br/>
+<br/> 
+    <h2>✒️ &nbsp; Code Modules & Settings</h2>      
+<div class='linked'><script type='text/x-sage'>
+import os,zipfile,h5py,cv2,urllib,requests
+import numpy as np,tensorflow as tf,pylab as pl
+from IPython.display import HTML,display
+file_path='https://raw.githubusercontent.com/OlgaBelitskaya/data/main/'
+names=[['lowercase','uppercase'],
+       [s for s in u'абвгдеёжзийклмнопрстуфхцчшщъыьэюя'],
+       ['single-colored paper','striped paper',
+        'squared paper','graph paper']]
+file_pre,file_name='',''
+exist={'True':'exists','False':'does not exist'}
+def file_name(lower_upper,letter,background,names=names):
+    file_pre='%02d_'%names[0].index(lower_upper)
+    file_pre+='%02d_'%names[1].index(letter)
+    file_pre+='%02d'%names[2].index(background)
+    return file_pre+'.h5'
+file_names=[file_name(n0,n1,n2) for n2 in names[2] 
+            for n1 in names[1] for n0 in names[0]]
+</script></div><br/>
+    <h2>✒️ &nbsp; A Quick Look at Local Folders with Images</h2> 
+<div class='linked'><script type='text/x-sage'>
+html_str="""<input type='file' accept='image/*' name='img_files' id='img_files'  
+onchange='loadFile(event)' webkitdirectory directory multiple><p>"""
+for i in range(10):
+    html_str+="""<img id='img_output"""+str(i)+"""' width='100'/>"""
+html_str+="""
+</p><p id='file_output'>number of image files: </p>
+<script>
+var loadFile=function(event) {
+    var i,len=event.target.files.length;
+    for (i=0; i<len; i++) {
+	    var img=document.getElementById('img_output'+i);
+	    img.src=URL.createObjectURL(event.target.files[i])
+    }; 
+    document.getElementById('file_output').innerHTML+=len-1;};
+<"""+"""/script>"""
+HTML(html_str)
+</script></div><br/> 
+<div class='linked'><script type='text/x-sage'>
+HTML("""<p id='img_blob'>image url #0: </p>
+<script>
+var img_blob=document.getElementById('img_output0').src;
+document.getElementById('img_blob').innerHTML+=img_blob;
+<"""+"""/script>""")
+</script></div><br/>
+    <h2>✒️ &nbsp; A Quick Look at Web Folders with Images</h2> 
+<div class='linked'><script type='text/x-sage'>
+@interact(layout=dict(top=[['lower_upper','letter','background'],['file_type']]))
+def _check_files(lower_upper=selector(names[0],default='uppercase'),
+                 letter=selector(names[1],default='а'),
+                 background=selector(names[2],default='single-colored paper'),
+                 file_type=selector(['.zip','.h5'],default='.zip')):
+    global file_pre,file_path,file_name,exist   
+    file_pre='%02d_'%names[0].index(lower_upper)
+    file_pre+='%02d_'%names[1].index(letter)
+    file_pre+='%02d'%names[2].index(background)
+    file_name=file_pre+file_type
+    print('the file name: '+file_name)
+    r=requests.head(file_path+'zip_letters/'+file_name)
+    print(file_path+'zip_letters/'+file_name,
+          exist[str(r.status_code==int(200))])
+    return r.status_code==int(200)
+</script></div><br/> 
+    <h2>✒️ &nbsp; File Processing</h2> 
+<div class='linked'><script type='text/x-sage'>
+images,nlabels,labels=[],[],[]
+for h5f in file_names[:18]:
+    input_file=urllib.request.urlopen(file_path+'zip_letters/'+h5f)
+    output_file=open(h5f,'wb')
+    output_file.write(input_file.read())
+    output_file.close(); input_file.close()
+    with h5py.File(h5f,'r') as f:
+        keys=list(f.keys())
+        nums=f[keys[0]].shape[0]
+        print('file name: %s; '%h5f+'number of images: %d'%nums)
+        images.append(np.array(f[keys[0]],dtype='float32'))
+        nlabels=[el.decode('utf-8') for el in f[keys[1]]]
+        labels.append(np.array(
+           nums*[[names[i].index(nlabels[i]) for i in range(3)]],
+           dtype='int32'))
+        f.close()
+    os.remove(h5f)
+images=np.concatenate(images,axis=0)
+labels=np.concatenate(labels,axis=0)
+images.shape,images.dtype,nlabels,labels.shape,labels.dtype
+</script></div><br/> 
+<div class='linked'><script type='text/x-sage'>
+shuffle_ids=np.arange(images.shape[0])
+np.random.RandomState(randint(0,images.shape[0])).shuffle(shuffle_ids)
+images=images[shuffle_ids]
+labels=labels[shuffle_ids]
+h5file='RussianLetters32.h5'
+with h5py.File(h5file,'w') as f:
+    f.create_dataset('images',data=images,compression='gzip')
+    f.create_dataset('labels',data=labels,compression='gzip')
+    f.close()
+with h5py.File(h5file,'r') as f:
+    keys=list(f.keys())
+    print(h5file+' data keys: '+', '.join(keys))
+    images=np.array(f[keys[0]])
+    labels=np.array(f[keys[1]])
+    f.close()
+print('\nfile size: %s'%list(os.stat(h5file))[6])
+def display_images(n_images,images,labels):
+    for i in range(n_images//5):
+        print(25*'=*= ')
+        for j in range(5):
+            randi=randint(0,images.shape[0]-1)
+            ti='n: %d =>'%randi+str(labels[randi])
+            matrix_plot(images[randi],title=ti,
+                        figsize=(1.5,1.5),frame=False).show()
+display_images(15,images,labels)
+</script></div><br/>
+    <h2>✒️ &nbsp; In Progress</h2> 
+<div class='linked'><script type='text/x-sage'>
+
+</script></div><br/>
+<div class='linked'><script type='text/x-sage'>
+
+</script></div><br/> 
+  </body>
+</html>
