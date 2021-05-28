@@ -12,18 +12,10 @@
     <a href='https://olgabelitskaya.github.io/README.html'>🌐 &nbsp; GitHub Pages &nbsp; &nbsp;</a> 
   </div>
   <h1 class='h1' id='colored_header1'>The Observable notebook is embedded as an iframe.</h1>
-  <iframe id='embed' width='90%' frameborder='0' 
+  <iframe id='embed' width='90%' height='500px' frameborder='0' 
     src='https://observablehq.com/embed/@olgabelitskaya/styling-of-mouse-events?cell=*'>
   </iframe>
 <script type='module'>
-const iframe=document.querySelector('#embed');
-function onMessage(message) {
-  if (message.source!==iframe.contentWindow) return;
-  let {data}=message;
-  if (typeof data==='string') { try {data=JSON.parse(data);} catch (ignore) {return;} }
-  if (data.context!=='iframe.resize') return;
-  iframe.style.height=`${data.height}px`; }
-addEventListener('message',onMessage);
 var tc=setInterval(function() {
   var doc1=document.getElementById('colored_header1');
   var now=Math.floor((new Date().getTime()%(1000*60))/1000);
