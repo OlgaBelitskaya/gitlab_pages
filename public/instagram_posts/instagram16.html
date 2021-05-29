@@ -35,14 +35,14 @@ style='--header-bg-color:#3636ff; font-family:Orbitron;'></codersrank-summary>
 SageMath & Python<br/>
 <div class='sage'><script type='text/x-sage'>
 !python3 -m pip install tensorflow_hub --user --quiet --no-warn-script-location
-path='/home/sc_work/.sage/local/lib/python3.8/site-packages'
+path='/home/sc_work/.sage/local/lib/python3.9/site-packages'
 import sys,os,urllib,warnings
 sys.path.append(path); warnings.filterwarnings('ignore')
 import numpy as np,tensorflow as tf,tensorflow_hub as hub
 super_hub_path='https://tfhub.dev/captain-pool/esrgan-tf2/1'
 os.environ['TFHUB_MODEL_LOAD_FORMAT']='COMPRESSED'
-file_path='https://olgabelitskaya.gitlab.io/images/'
-file_name='03_010.png'; lr_size=int(32)
+file_path='https://raw.githubusercontent.com/OlgaBelitskaya/data/main/pictograms/'
+file_name='00_02_012.png'; lr_size=int(32)
 input_file=urllib.request.urlopen(file_path+file_name)
 output_file=open(file_name,'wb')
 output_file.write(input_file.read())

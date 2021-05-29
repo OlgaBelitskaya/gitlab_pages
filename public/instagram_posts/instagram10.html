@@ -175,8 +175,8 @@ el=['😀','😁','😂','😃','😄','😅','😆','😇','😈','😉',
     '😞','😟','😠','😡','😢','😣','😥','😦','😧','😨',
     '😩','😪','😫','😭','😮','😯','😰','😱','😲','😳',
     '😴','😵','😶','😷']
-st1='<p style="color:#aa00ff; font-size:270%;">'
-st2='Emotional Horoscope for the Day</p>'
+st1='<p style="color:#aa00ff; font-size:200%; padding:0px 0px 0px 70px;">'
+st2='$\\mathbb{Emotional \\; Horoscope \\; of \\; the \\; Day}$</p>'
 pretty_print(html(st1+st2))
 var('t,k'); n=randint(16,36)
 a,b,c=randint(5,11),randint(12,24),2*randint(3,6)
@@ -190,11 +190,9 @@ EL=[(3*cos(j*pi/12),3*sin(j*pi/12)) for j in [1..24]]
 def col(): return (random(),0,random())
 EP1=sum([polygon2d(L[i],color=col(),thickness=.7,alpha=.05) 
          for i in range(2*c)])
-EP2=sum([text(el[randint(0,len(el)-1)]+' '+str(31-j),
-              EL[j-1],fontsize=20,color=col()) 
-         for j in [7..24]])
-EP3=text(el[randint(0,len(el)-1)],
-         (0,0),fontsize=60,color=col())
+EP2=sum([text(el[randint(0,len(el)-1)]+' '+str(31-j),EL[j-1],
+              fontsize=16,color=col()) for j in [7..24]])
+EP3=text(el[randint(0,len(el)-1)],(0,0),fontsize=100,color='#aa00ff')
 (EP1+EP2+EP3).show(axes=False,figsize=(6,6))
 </script></div><br/>
 <div class='sage'><script type='text/x-sage'>
@@ -224,8 +222,7 @@ from mpl_toolkits.mplot3d import Axes3D
 a,b,c=random.randint(2,12),1.5,random.randint(1,7) 
 print('a=%d; b=%.1f; c=%d'%(a,b,c))
 r=numpy.arange(1,c+1); th=.1+random.random() 
-t=numpy.arange(-2*b*numpy.pi,2*b*numpy.pi,
-               5/10**random.randint(1,3)) 
+t=numpy.arange(-2*b*numpy.pi,2*b*numpy.pi,5/10**random.randint(1,3)) 
 fx=(a+numpy.cos(b*t))*numpy.cos(t)
 fy=(a+numpy.cos(b*t))*numpy.sin(t)
 fz=numpy.sin(b*t)
