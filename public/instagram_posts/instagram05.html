@@ -34,11 +34,8 @@ style='--header-bg-color:#3636ff; font-family:Orbitron;'></codersrank-widget>
     <h1>Do you think it's hard to create your own maps?</h1>
 Python Modules &#38; SageMathCell<br/>
 <div class='sage'><script type='text/x-sage'>
-!python3 -m pip install --upgrade pip \
---user --quiet --no-warn-script-location
-!python3 -m pip install geopandas \
---user --quiet --no-warn-script-location
-path='/home/sc_work/.sage/local/lib/python3.8/site-packages'
+!python3 -m pip install geopandas --user --quiet --no-warn-script-location
+path='/home/sc_work/.sage/local/lib/python3.9/site-packages'
 import sys; sys.path.append(path)
 import pandas,geopandas,pylab,warnings
 warnings.simplefilter('ignore')
@@ -81,11 +78,8 @@ model.evaluate(x_test,y_test,verbose=int(0))
     <h1>molecular structures with BioPandas</h1>
 Python Modules &#38; SageMathCell<br/>
 <div class='sage'><script type='text/x-sage'>
-!python3 -m pip install --upgrade pip \
---user --quiet --no-warn-script-location
-!python3 -m pip install  biopandas \
---user --quiet --no-warn-script-location
-path='/home/sc_work/.sage/local/lib/python3.8/site-packages'
+!python3 -m pip install  biopandas --user --quiet --no-warn-script-location
+path='/home/sc_work/.sage/local/lib/python3.9/site-packages'
 import sys; sys.path.append(path)
 f='1b5e_2.mol2'
 fpath='https://raw.githubusercontent.com/rasbt/'
@@ -108,11 +102,8 @@ pylab.tight_layout(); pylab.show()
     <h1>stacking classifiers in Mlxtend</h1>
 Python Modules &#38; SageMathCell<br/>    
 <div class='sage'><script type='text/x-sage'>
-!python3 -m pip install --upgrade pip \
---user --quiet --no-warn-script-location
-!python3 -m pip install mlxtend \
---user --quiet --no-warn-script-location
-path='/home/sc_work/.sage/local/lib/python3.8/site-packages'
+!python3 -m pip install mlxtend --user --quiet --no-warn-script-location
+path='/home/sc_work/.sage/local/lib/python3.9/site-packages'
 import sys; sys.path.append(path)
 import numpy,warnings; warnings.simplefilter('ignore')
 from sklearn import datasets,model_selection,svm
@@ -145,11 +136,8 @@ for clf,label in zip(clfs+[sclf1,sclf2,sclf3],labels):
     <h1>stacking regressors in Mlxtend?</h1>
 Python Modules &#38; SageMathCell<br/>       
 <div class='sage'><script type='text/x-sage'>
-!python3 -m pip install --upgrade pip \
---user --quiet --no-warn-script-location
-!python3 -m pip install mlxtend \
---user --quiet --no-warn-script-location
-path='/home/sc_work/.sage/local/lib/python3.8/site-packages'
+!python3 -m pip install mlxtend --user --quiet --no-warn-script-location
+path='/home/sc_work/.sage/local/lib/python3.9/site-packages'
 import sys; sys.path.append(path)
 import numpy,warnings; warnings.simplefilter('ignore')
 from sklearn import datasets,model_selection
