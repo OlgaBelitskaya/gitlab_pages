@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset='utf-8'>
+    <title>🏙 Thebe Experiments</title>
+    <!-- Thebe configuration !-->
+    <script type='text/x-thebe-config'>
+      thebeConfig = {
+        binderOptions: {repo:'sagemath/sage-binder-env',},
+        stripPrompts: {inPrompt:'sage: ',continuationPrompt:'....: ',selector:'pre:contains("sage: ")',},
+        kernelOptions: {name:'sagemath',},
+        requestKernel: true}
+    </script>
+    <!-- Load the Thebe library !-->
+    <script src='https://unpkg.com/thebe@latest/lib/index.js'></script>
+    <!-- Activate Thebe directly upon loading the page !-->
+    <script>window.onload=function() { thebelab.bootstrap(); };</script>
+  </head>
+  <style>
+  @import 'https://fonts.googleapis.com/css?family=Akronim';
+  .ph1 {font-family:Akronim; font-size:160%; text-shadow:3px 3px 3px #aaa;}
+  a {color:slategray; font-size:110%; text-shadow:3px 3px 3px #aaa;}
+  h2 {color:slategray; font-family:Akronim; font-size:120%; text-shadow:4px 4px 4px #aaa;}
+  body {max-width:95%; margin:5px 5px 5px 15px; padding: 0 1em;}
+  </style>
+  <body>
+  <div class='navbar'>
+    <a href='https://olgabelitskaya.gitlab.io/index.html'>🌐 &nbsp; Homepage &nbsp; &nbsp;</a>
+    <a href='https://olgabelitskaya.gitlab.io/experiments/index.html'>🌐 &nbsp; Experiment List &nbsp; &nbsp;</a>
+    <a href='https://olgabelitskaya.github.io/README.html'>🌐 &nbsp; GitHub Pages &nbsp; &nbsp;</a> 
+  </div>
+  <h1 class='ph1' id='ch1'>🏙 Thebe Experiments with Live SageMath Coding.</h1>
+  <h2>✒️ &nbsp; Cell #1</h2>
+<pre>
+    sage: var('t'); n=3; d={2*i+1:[2*i+2] for i in [0..6]}
+    sage: c=[colormaps.ocean(24*k)[:3] for k in [0..10]]
+    sage: p=polar_plot([(t+k/n)*log(t/n) for k in [0..10]],0,n*pi,color=c,fill=d,fillcolor=c)
+    sage: ti=r'$f=(t+k/%d)'%n+' \cdot \log(t/%d)'%n+', k \in \{0,1,...,10\}$'
+    sage: p.show(title=ti,fontsize=12,figsize=(7,5))
+</pre>
+  <h2>✒️ &nbsp; Cell #2</h2>
+<pre>
+    sage: @interact
+    sage: def _(a=[7,9,..,17],b=[10,12,..,20]):
+    sage:     x(t)=cos(t)+cos(a*t)/2+sin((a+b)*t)/3
+    sage:     y(t)=sin(t)+sin(a*t)/2+cos((a+b)*t)/3
+    sage:     def col(c): return colormaps.hsv(5*c)[:3]
+    sage:     p=sum([parametric_plot((x,y),(t,(i-1)*pi/24,i*pi/24),color=col(i)) for i in [1..48]])
+    sage:     p.show(aspect_ratio=1,figsize=7,gridlines=True)
+</pre>
+  <h2>✒️ &nbsp; Cell #3</h2>
+<pre>
+    sage: %%r
+    sage: elements<-c('☜','☞','☝︎','☟')
+    sage: n<-length(elements)
+    sage: S<-unique(t(sapply(1:10^3,function(x) sample(elements,n)))) 
+    sage: S<-apply(S,1,function(x) paste0(x,collapse=''))
+    sage: print(length(S)==factorial(4)); S
+</pre>
+<script type='module'>
+var tc=setInterval(function() {
+  var doc1=document.getElementById('ch1');
+  var now=Math.floor((new Date().getTime()%(1000*60))/1000);
+  var col='rgb('+(10+Math.abs(245-8*now))+','+(255-Math.abs(245-8*now))+',0)';
+  doc1.style.color=col}, 1000);
+</script>
+  </body>
+</html>

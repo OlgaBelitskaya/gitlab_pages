@@ -216,5 +216,20 @@ def _(m1=[3,4,5,6],m2=[3,4,5,6],th1=[.5,.7,.9,1.1],th2=[.3,.7,1.1,1.5]):
                       rotate_bezier_path_cubegraph(m2,k,color='white',th=th2)]) 
                  for k in range(3,9)],figsize=(5,5),axes=False).show()
 </script></div><br/>
+    <h2>#5 3D Function Drawing</h2>
+<div class='trick'><script type='text/x-sage'>
+@interact
+def _(num=[2..4],alpha=[4..8],opacity=slider([.9,.8,..,.1],default=.5),
+      col=slider(['#ff3366','#ff33aa','#ff36ff','#ff3636','#ff6633','#ff66aa'])):
+   var('u,v')
+   x=(2+cos(v/3)*sin(u)-sin(v/3)*sin(6*u))*cos(v)
+   y=(2+cos(v/3)*sin(u)-sin(v/3)*sin(6*u))*sin(v)
+   z=30*abs(sin(v/3)*sin(u)+cos(v/3)*sin(6*u))
+   pp=[parametric_plot3d(
+            [2*i*x,2*i*y,z],(u,0,alpha*pi),(v,0,alpha*pi),
+            opacity=opacity,mesh=True,frame=False,color=col)
+        for i in [1..num]]
+   sum(pp).show()
+</script></div><br/>
   </body>
 </html>
