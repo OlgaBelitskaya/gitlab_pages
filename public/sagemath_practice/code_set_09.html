@@ -91,9 +91,9 @@ import warnings; warnings.filterwarnings('ignore')
 from IPython.core.magic import register_line_magic
 @register_line_magic
 def vector(file):
-    file_path='https://olgabelitskaya.github.io/'
+    file_path='https://raw.githubusercontent.com/OlgaBelitskaya/data/main/decors/'
     img=io.imread(file_path+file)
-    level=.853; img=color.colorconv.rgba2rgb(img) 
+    level=.7; img=color.colorconv.rgba2rgb(img) 
     gray_img=color.colorconv.rgb2gray(img) 
     contours=measure.find_contours(gray_img,level)
     pylab.figure(figsize=(5,5))
@@ -101,7 +101,7 @@ def vector(file):
     pylab.imshow(img,alpha=.1)
     [pylab.plot(c[:,1],c[:,0],lw=1) for c in contours]
     pylab.xticks([]); pylab.yticks([]); pylab.show()
-%vector pattern03.jpeg
+%vector 00_01_001.png
 </script></div>      
   <h2>Other Languages (R, HTML, ...)</h2>
 <div class='compute'><script type='text/x-sage'>

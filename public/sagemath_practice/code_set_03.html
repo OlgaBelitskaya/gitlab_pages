@@ -130,24 +130,33 @@ colnames(df)<-mask_list; t(df)
 <div class='compute'><script type='text/x-sage'>
 %%html
 <text style='color:#3636ff;'>
-$\mathscr{\begin{array}{c}
-G = \alpha * A * B^T \ + \ \beta * C^T * D \\
-\hline &\;&\;&\;&\;&\;&\; 
+$\mathscr{
+\begin{bmatrix}
+\begin{array}{c}
+G = \alpha * A * B^T \ + \ \beta * C^T * D \\ 
+\hline &\;&\;&\;&\;&\;&\;&\;
 \end{array} \\
+\begin{array}{c}
 \alpha = 2, \ \beta = -5, \\
 A_{(2,3)} = \begin{pmatrix}
--3 & -3 & -6 \\ -4 & -7 & 8 \\ \end{pmatrix}, \ 
+-3 & -3 & -6 \\ -4 & -7 & 8 \\ 
+\end{pmatrix}, \ 
 B_{(4,3)} = \begin{pmatrix}
-2 & 8 & 7 \\ -5 & -6 & -2 \\ 
--8 & 4 & -8 \\ 7 & 4 & -6 \\ \end{pmatrix}, \\
+2 & 8 & 7 \\ -5 & -6 & -2 \\ -8 & 4 & -8 \\ 7 & 4 & -6 \\ 
+\end{pmatrix}, \\
 C_{(2,2)} = \begin{pmatrix}
--2 & -4 \\ 3 & -5 \\ \end{pmatrix}, \ 
+-2 & -4 \\ 3 & -5 \\ 
+\end{pmatrix}, \ 
 D_{(2,4)} = \begin{pmatrix}
--2 & -3 & -1 & 3 \\ -2 & -9 & 8 & 9 \\ \end{pmatrix}. \\ 
+-2 & -3 & -1 & 3 \\ -2 & -9 & 8 & 9 \\ 
+\end{pmatrix}. \\ 
+\end{array} \\ 
 \begin{array}{c}
-&\;&\;&\;&\;&\;&\;&\;&\;&\;&\;&\;&\;&\;&\; \\ 
-\hline
-G = ? \end{array}}$</text>
+\hline &\;&\;&\;&\;&\;&\;&\;&\;&\;&\;&\;&\;&\;&\;&\;&\; \\
+G = ? 
+\end{array} 
+\end{bmatrix}}$
+</text>
 </script></div><br/>
   </body>
 </html>
