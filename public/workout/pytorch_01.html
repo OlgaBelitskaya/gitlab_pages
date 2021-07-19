@@ -6,8 +6,7 @@
     <title>📑 Pytorch Workout 01</title>
     <script src='https://sagecell.sagemath.org/static/embedded_sagecell.js'></script>
     <script>$(function () {
-        sagecell.makeSagecell({inputLocation:'div.linked',
-                               linked:true,evalButtonText:'run'}); });
+        sagecell.makeSagecell({inputLocation:'div.linked',linked:true,evalButtonText:'run'}); });
     </script>
   </head>
   <style>
@@ -34,13 +33,9 @@
     <h1>📑 Pytorch Workout 01</h1>
     <h2>Code Modules</h2>
 <div class='linked'><script type='text/x-sage'>
-!python3 -m pip install --upgrade pip \
---user --quiet --no-warn-script-location
-!python3 -m pip install torch==1.6.0 \
---user --quiet --no-warn-script-location
-!python3 -m pip install torchvision==0.7.0 \
---user --quiet --no-warn-script-location
-spath='/home/sc_work/.sage/local/lib/python3.8/site-packages'
+!python3 -m pip install torch==1.8.0 --user --quiet --no-warn-script-location
+!python3 -m pip install torchvision==0.9.0 --user --quiet --no-warn-script-location
+spath='/home/sc_work/.sage/local/lib/python3.9/site-packages'
 import sys; sys.path.append(spath)
 import numpy as np,pandas as pd,pylab as pl
 import h5py,urllib,torch,torchvision
@@ -50,8 +45,8 @@ import sklearn.datasets as skd
 from torch.utils.data import Dataset as tds
 from torch.utils.data import DataLoader as tdl
 from IPython.core.magic import register_line_magic
-dev=torch.device('cuda:0' \
-if torch.cuda.is_available() else 'cpu')
+dev=torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+html('<style>.sagecell_input {text-shadow:4px 4px 4px #aaa;}</style>')
 </script></div><br/>
     <h2>Image Data</h2>
 <div class='linked'><script type='text/x-sage'>
@@ -81,8 +76,8 @@ df=pd.DataFrame(
 fig=pl.figure(figsize=(7,4)); n=randint(1,100)
 for i in range(n,n+6):
     ax=fig.add_subplot(2,3,i-n+1,xticks=[],yticks=[])
-    ax.set_title(
-        names[labels[i]],color='slategray',fontdict={'fontsize':'large'})
+    ax.set_title('$\\mathscr{'+names[labels[i]]+'}$',
+                 color='slategray',fontdict={'fontsize':'medium'})
     ax.imshow((images[i]))
 pl.tight_layout(); pl.show(); display(df)
 </script></div><br/>
@@ -103,16 +98,11 @@ class FlowerData(tds):
         return x,y   
     def __len__(self):
         return len(self.labels)
-batch_size=int(16); num_workers=int(4); img_size=int(64)
-trans=tvt.Compose(
-    [tvt.ToPILImage(),tvt.Resize((img_size,img_size)),
-     tvt.ToTensor()])
-train=FlowerData(
-    images=x_train,labels=y_train,transform=trans)
-test=FlowerData(
-    images=x_test,labels=y_test,transform=trans)
-valid=FlowerData(
-    images=x_valid,labels=y_valid,transform=trans)
+batch_size=int(16); num_workers=int(4); img_size=int(32)
+trans=tvt.Compose([tvt.ToPILImage(),tvt.Resize((img_size,img_size)),tvt.ToTensor()])
+train=FlowerData(images=x_train,labels=y_train,transform=trans)
+test=FlowerData(images=x_test,labels=y_test,transform=trans)
+valid=FlowerData(images=x_valid,labels=y_valid,transform=trans)
 dataloaders={'train':tdl(dataset=train,batch_size=batch_size,
                          shuffle=True,num_workers=num_workers),
              'test':tdl(dataset=test,batch_size=batch_size,
@@ -127,11 +117,11 @@ def display_examples(data):
         print('Image dimensions: %s'%str(images.shape))
         print('Label dimensions: %s'%str(labels.shape))
         n=np.random.randint(1,5)
-        fig=pl.figure(figsize=(7,2))
+        fig=pl.figure(figsize=(7,1))
         for i in range(n,n+5):
-            ax=fig.add_subplot(1,5,i-n+1,\
-            xticks=[],yticks=[],\
-            title=names[labels[i].item()])
+            ax=fig.add_subplot(1,5,i-n+1,xticks=[],yticks=[])
+            ax.set_title('$\\mathscr{'+names[labels[i].item()]+'}$',
+                         fontsize=10,color='slategray')
             ax.imshow(np.transpose(images[i],(1,2,0)))
         pl.tight_layout(); pl.show()
         break
@@ -143,21 +133,72 @@ from torchvision import models
 import torch.nn.functional as tnnf
 import torch.nn as tnn
 num_classes=len(names)
-tmodel=models.vgg16(pretrained=True,progress=False)
-for param in tmodel.parameters(): param.requires_grad=False
-tmodel.classifier[int(3)].requires_grad=True
-tmodel.classifier[int(6)]=tnn.Sequential(
-    tnn.Linear(int(4096),int(256)),tnn.ReLU(),
-    tnn.Dropout(float(.5)),tnn.Linear(int(256),num_classes))
+#tmodel=models.vgg16(pretrained=True,progress=False)
+#for param in tmodel.parameters(): param.requires_grad=False
+#tmodel.classifier[int(3)].requires_grad=True
+#tmodel.classifier[int(6)]=tnn.Sequential(
+#    tnn.Linear(int(4096),int(256)),tnn.ReLU(),
+#    tnn.Dropout(float(.5)),tnn.Linear(int(256),num_classes))
+</script></div><br/>
+<div class='linked'><script type='text/x-sage'>
+class FilterResponseNorm(tnn.Module):
+    def __init__(self,num_features,eps=float(1e-6)):
+        super(FilterResponseNorm,self).__init__()        
+        self.register_parameter('beta',\
+        tnn.Parameter(torch.empty([int(1),num_features,int(1),int(1)]).normal_()))
+        self.register_parameter('gamma',\
+        tnn.Parameter(torch.empty([int(1),num_features,int(1),int(1)]).normal_()))      
+        self.register_parameter('tau',\
+        tnn.Parameter(torch.empty([int(1),num_features,int(1),int(1)]).normal_()))     
+        self.eps=torch.Tensor([eps])
+    def forward(self,x):
+        n,c,h,w=x.size()        
+        self.eps=self.eps.to(self.tau.device)
+        nu2=torch.mean(x.pow(int(2)),(int(2),int(3)),keepdims=True)
+        x=x*torch.rsqrt(nu2+torch.abs(self.eps))
+        return torch.max(self.gamma*x+self.beta,self.tau)
+def convfrn(x,y,k,s,p):
+    return tnn.Sequential(
+        tnn.Conv2d(x,y,kernel_size=k,stride=s,padding=p),FilterResponseNorm(y))
+class FRN_NNinNN(tnn.Module):
+    def __init__(self,num_classes):
+        super(FRN_NNinNN,self).__init__()
+        self.num_classes=num_classes
+        self.classifier=tnn.Sequential(
+            convfrn(int(3),int(192),int(5),int(1),int(2)),
+            convfrn(int(192),int(160),int(1),int(1),int(0)),
+            convfrn(int(160),int(96),int(1),int(1),int(0)),
+            tnn.MaxPool2d(kernel_size=int(3),stride=int(2),padding=int(1)),
+            tnn.Dropout(float(.5)),
+            convfrn(int(96),int(192),int(5),int(1),int(2)),
+            convfrn(int(192),int(192),int(1),int(1),int(0)),
+            convfrn(int(192),int(192),int(1),int(1),int(0)),
+            tnn.AvgPool2d(kernel_size=int(3),stride=int(2),padding=int(1)),
+            tnn.Dropout(float(.5)),
+            convfrn(int(192),int(192),int(3),int(1),int(1)),
+            convfrn(int(192),int(192),int(1),int(1),int(0)),
+            tnn.Conv2d(int(192),self.num_classes,kernel_size=int(1),stride=int(1),padding=int(0)),
+            tnn.ReLU(),
+            tnn.AvgPool2d(kernel_size=int(8),stride=int(1),padding=int(0)))
+    def forward(self,x):
+        x=self.classifier(x)
+        logits=x.view(x.size(int(0)),self.num_classes)
+        probs=torch.softmax(logits,dim=int(1))
+        return logits,probs
+</script></div><br/>
+<div class='linked'><script type='text/x-sage'>
+random_seed=int(12); learning_rate=float(.00005)
+torch.manual_seed(random_seed)
+tmodel=FRN_NNinNN(num_classes)
 tmodel=tmodel.to(dev)
-optimizer=torch.optim.Adam(tmodel.parameters())
+optimizer=torch.optim.Adam(tmodel.parameters(),lr=learning_rate)
 def model_acc(model,data_loader):
     correct_preds,num_examples=int(0),int(0)  
     for features,targets in data_loader:
         features=features.to(dev)
         targets=targets.to(dev).long()
         logits=model(features)
-        _,pred_labels=torch.max(logits,int(1))
+        _,pred_labels=torch.max(logits[int(0)],int(1))
         num_examples+=targets.size(int(0))
         correct_preds+=(pred_labels==targets).sum()        
     return correct_preds.float()/num_examples*int(100)
@@ -169,8 +210,7 @@ def epoch_loss(model,data_loader):
             features=features.to(dev)
             targets=targets.to(dev).long()
             logits=model(features)
-            loss=tnnf.cross_entropy(
-                logits,targets,reduction='sum')
+            loss=tnnf.cross_entropy(logits[int(0)],targets,reduction='sum')
             num_examples+=targets.size(int(0))
             curr_loss+=loss
         return curr_loss/num_examples
@@ -182,27 +222,23 @@ def train_run(epochs):
     epochs=int(epochs)
     for epoch in range(epochs):
         tmodel.train()
-        for batch_ids,(features,targets) \
-        in enumerate(dataloaders['train']):        
+        for batch_ids,(features,targets) in enumerate(dataloaders['train']):        
             features=features.to(dev)
             targets=targets.to(dev).long()
             logits=tmodel(features)
-            cost=tnnf.cross_entropy(logits,targets)
+            cost=tnnf.cross_entropy(logits[int(0)],targets)
             optimizer.zero_grad(); cost.backward()
             optimizer.step()
             if not batch_ids%int(10):
                 print ('Epoch: %03d/%03d | Batch: %03d/%03d | Cost: %.4f' 
-                       %(epoch+int(1),epochs,batch_ids,
-                         len(dataloaders['train']),cost))
+                       %(epoch+int(1),epochs,batch_ids,len(dataloaders['train']),cost))
         tmodel.eval()
         with torch.set_grad_enabled(False):
             print('Epoch: %03d/%03d'%(epoch+int(1),epochs))
             print('train acc/loss: %.2f%%/%.2f valid acc/loss: %.2f%%/%.2f'%\
-                  (model_acc(tmodel,dataloaders['train']),
-                   epoch_loss(tmodel,dataloaders['train']),
-                   model_acc(tmodel,dataloaders['valid']),
-                   epoch_loss(tmodel,dataloaders['valid'])))
-%train_run 1
+                  (model_acc(tmodel,dataloaders['train']),epoch_loss(tmodel,dataloaders['train']),
+                   model_acc(tmodel,dataloaders['valid']),epoch_loss(tmodel,dataloaders['valid'])))
+%train_run 2
 </script></div><br/>
     <h2>Model Evaluation</h2>
 <div class='linked'><script type='text/x-sage'>

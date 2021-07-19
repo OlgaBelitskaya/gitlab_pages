@@ -147,16 +147,45 @@ $(document).ready(div_hide_display);
 </"""+"""script>
 <div id='d302h04' style='border:double slategray; width:24%;'>
 <p>😋 😌 😍 😎 😏 ===> HELLO</p><center>
-<img width='90%' src='https://olgabelitskaya.gitlab.io/data/flowers/00_001.png'></img>
+<img width='90%' src='https://raw.githubusercontent.com/OlgaBelitskaya/data/main/flowers/00_001.png'></img>
 </center><p>HELLO <=== 😋 😌 😍 😎 😏</p></div>
 <form action='javascript:div_hide_display()'>
 <input style='color:slategray; background:silver; opacity:.7;'
 type='submit' value='click to display or hide div'></form>""")
 </script></div><br/>
-    <h2>_____</h2>
+    <h2>html styling by clicks</h2>
 <div class='sagehtml'><script type='text/x-sage'>
-%%html
-
+def clickhtml(string,emo='✒️'):
+    font_color_set=['#E91E63','#FA7A00','#FED85D','#91E351',
+                    '#00D8A0','#1AADE0','#3355FF','#7855EE']
+    font_family_set=['times','courier']
+    font_size_set=[21,22,23,24,25]
+    font_color=choice(font_color_set)
+    font_family=choice(font_family_set)
+    font_size=choice(font_size_set)
+    html_str="""
+    <p class='click_header' 
+    onclick='setStyle(this,
+        &#34;"""+font_color+"""&#34;,
+        &#34;"""+font_family+"""&#34;,
+        &#34;"""+str(font_size)+"""&#34;)'
+    style='text-shadow:3px 3px 3px #ccc; font-family:courier; 
+    font-size:20px; color:#ff33ff;'>
+    """+emo+"""  """+string+"""
+    </p>
+    <script>
+    function setStyle(element,color,family,size) {
+     var docs=document.getElementsByClassName('click_header');
+     for (var i=0; i<docs.length; i++) {
+         docs[i].style='text-shadow:4px 4px 4px slategray; '+
+                       'font-family:'+family+
+                       '; font-size:'+size+'px; '; 
+         docs[i].style.color=color;}; };
+    </"""+"""script>"""
+    display(html(html_str))
+for i in range(4):
+    print(15*'*=* ')
+    clickhtml('Header Styling by Clicks #%d'%(i+1))
 </script></div><br/>
     <h2>code hiding</h2>
 <div class='sagehtml'><script type='text/x-sage'>
