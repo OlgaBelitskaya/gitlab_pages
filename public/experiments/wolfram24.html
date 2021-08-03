@@ -16,17 +16,17 @@
     <a href='https://olgabelitskaya.gitlab.io/experiments/index.html'>🌐 &nbsp; Experiment List &nbsp; &nbsp;</a>
     <a href='https://olgabelitskaya.github.io/README.html'>🌐 &nbsp; GitHub Pages &nbsp; &nbsp;</a> 
   </div>
-  <h1 class='h1' id='colored_header1'>The Wolfram notebooks #1-24 are embedded in the iframe.</h1>
+  <h1 class='h1' id='colored_header1'>The Wolfram notebooks #01-24 are embedded in the iframe.</h1>
 <div class='iframe'><script type='text/x-sage'>
 @interact(layout=dict(top=[['','Notebook_Number']]))
-def _get_params(Notebook_Number=selector([1,2,..,24],default=24)):
-    if Notebook_Number==1: nn=''
+def _get_params(Notebook_Number=selector([1,2,..,24],default=1)):
+    if Notebook_Number<10: nn='0%s'%Notebook_Number
     else: nn=str(Notebook_Number)
     display(html("""
 <div style='border:10px double white; width:97%; height:520px; 
             overflow:auto; padding:10px; background-color:aliceblue'>
   <iframe id='embed' width='100%' height='500px' frameborder='0' 
-    src='https://www.wolframcloud.com/obj/safuolga/Published/wolfram"""+nn+""".nb'>
+    src='https://www.wolframcloud.com/obj/olgabelitskaya2019ml/Published/wolfram"""+nn+""".nb'>
   </iframe>
 </div>"""))
 </script></div><br/>

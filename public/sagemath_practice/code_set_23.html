@@ -109,17 +109,20 @@ animate([t+text(M,(x,y),fontsize=30,rgbcolor=c[2])
 </script></div>    
   <h2>Python Modules</h2>
 <div class='compute'><script type='text/x-sage'>
-import numpy,pylab,urllib; from scipy.io import wavfile
-url='https://ccrma.stanford.edu/~jos/wav/slideflute.wav'
+import numpy,pylab,urllib,warnings
+from scipy.io import wavfile
+from IPython.display import display,Audio
+warnings.filterwarnings('ignore')
+url='https://storage.googleapis.com/audioset/miaow_16k.wav'
 input_file=urllib.request.urlopen(url)
-output_file=open('slideflute.wav','wb')
+output_file=open('miaow_16k.wav','wb')
 output_file.write(input_file.read())
 output_file.close(); input_file.close()
-sr,wav=wavfile.read('slideflute.wav');
+_,wav=wavfile.read('miaow_16k.wav');
 wav=wav.astype('float')/numpy.iinfo(numpy.int16).max
-f,ax=pylab.subplots(1,figsize=(7,5))
-ax.plot(wav[:,1],c='#3636ff',lw=.05,alpha=.9)
-ax.plot(wav[:,0],c='#36ff36',lw=.05,alpha=.5)
+display(Audio(wav,rate=int(16000)))
+f,ax=pylab.subplots(1,figsize=(6,5))
+ax.plot(wav,c='#3636ff',lw=.05,alpha=.9)
 ax.set_ylabel('amplitude'); pylab.show()
 </script></div>      
   <h2>Other Languages (R, HTML, ...)</h2>

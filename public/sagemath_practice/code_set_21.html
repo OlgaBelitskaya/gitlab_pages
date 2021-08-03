@@ -99,31 +99,24 @@ animate(fragments,title=cm,gridlines=True,
 </script></div><br/>
   <p>This code cell was evaluated automatically.</p>
 <div id='cell2'><script type='text/x-sage'>
-def sefs(string,symbol='t'):
-    var(symbol)
+def sefs(string):
+    t=var('t')
     return sage.calculus.calculus\
-           .symbolic_expression_from_string(string)
+          .symbolic_expression_from_string(string,syms={'t':t},accept_sequence=True)
 @interact
-def _(function=['(2t, t^2)','(7sin(t), 4cos(t)+6)',
-                '(2t cos(t)^2, t^2 cos(t)^2)']):
+def _(function=['[2t,t^2]','[7sin(t),4cos(t)+6]','[cos(t)^2*2t,cos(t)^2*t^2]']):
     n=10; var('t'); c=['#3636ff','#ff3636']
-    function=function.replace('(','')\
-    .replace(')','').split(',')
-    f=(sefs(function[0]),sefs(function[1]))
-    df=(f[0].diff(),f[1].diff()) 
-    d2f=(df[0].diff(),df[1].diff())
+    print(function)
+    f=(sefs(function)); print(f)
+    df=(f[0].diff(),f[1].diff()); d2f=(df[0].diff(),df[1].diff())
     def norm(g): return sqrt(sum(el^2 for el in g))
-    normdf,normd2f=norm(df),norm(d2f)
-    fnormal=(df[1]/normdf,-df[0]/normdf) 
+    fnormal=(df[1]/norm(df),-df[0]/norm(df)) 
     r=norm(df)^3/(df[1]*d2f[0]-df[0]*d2f[1])
     centers=(f[0]+r*fnormal[0],f[1]+r*fnormal[1])
-    print('f: x(t)=%s; y(t)=%s'%(f))
-    p=parametric_plot(f,(t,-n,n),
-                      color=c[0],thickness=2)
-    p+=parametric_plot(centers,(t,-n,n),color=c[1],
-                       thickness=3,linestyle='--')
-    p+=sum(line2d([(f[0](t=i),f[1](t=i)),
-                   (centers[0](t=i),centers[1](t=i))], 
+    print('f: x(t)=%s; y(t)=%s'%(f[0],f[1]))
+    p=parametric_plot(f,(t,-n,n),color=c[0],thickness=2)
+    p+=parametric_plot(centers,(t,-n,n),color=c[1],thickness=3,linestyle='--')
+    p+=sum(line2d([(f[0](t=i),f[1](t=i)),(centers[0](t=i),centers[1](t=i))], 
            thickness=1,rgbcolor=Color('silver').rgb()) 
            for i in sxrange(-n,n,.1))
     p.show(xmin=-8,xmax=8,ymin=-2,ymax=14,figsize=7)

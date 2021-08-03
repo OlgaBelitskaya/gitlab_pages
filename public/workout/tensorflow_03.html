@@ -1,0 +1,167 @@
+<!DOCTYPE HTML>
+<html>
+  <head>
+    <meta charset='utf-8'>
+    <meta name='viewport' content='width=device-width'>
+    <title>📑 TensorFlow Workout 03</title>
+    <script src='https://sagecell.sagemath.org/static/embedded_sagecell.js'></script>
+    <script>$(function() {sagecell.makeSagecell({inputLocation:'div.linked',linked:true,evalButtonText:'run'});});
+    </script>
+  </head>
+  <style>
+    @import 'https://fonts.googleapis.com/css?family=Akronim';
+    h1,h2,h3,h4 {color:darkorange; font-family:Akronim; text-shadow:4px 4px 4px #aaa; padding-left:20px;}
+    p,a {color:slategray; font-size:110%; text-shadow:4px 4px 4px #aaa; padding-left:20px;}
+    body {margin:5px 5px 5px 20px; background:whitesmoke; border:double slategray;}
+    .sagecell .CodeMirror-scroll {min-height:3em; max-height:90em;}
+  </style>
+  <body>
+    <div class='navbar'>
+    &nbsp; &nbsp; &nbsp; &nbsp;
+    <a href='https://olgabelitskaya.gitlab.io/index.html'>🌐 &nbsp; Homepage &nbsp; &nbsp;</a>
+    &nbsp; &nbsp; &nbsp; &nbsp;
+    <a href='https://olgabelitskaya.gitlab.io/workout/index.html'>🌐 &nbsp; Workout List</a>
+    &nbsp; &nbsp; &nbsp; &nbsp;
+    <a href='https://olgabelitskaya.github.io/README.html'>🌐 &nbsp; GitHub Pages &nbsp; &nbsp;</a>
+    &nbsp; &nbsp; &nbsp; &nbsp; 
+    <a href='https://www.instagram.com/olga.belitskaya/'>🌐 &nbsp; Instagram Posts &nbsp; &nbsp;</a> 
+    &nbsp; &nbsp; &nbsp; &nbsp;    
+    <a href='https://www.pinterest.ru/olga_belitskaya/code-style/'>🌐 &nbsp; Pinterest Posts</a>
+    </div><br/>
+    <h1>📑 TensorFlow Workout 03</h1>
+    <h2>Code Modules</h2>
+<div class='linked'><script type='text/x-sage'>
+import sys,warnings,os,shutil,zipfile,urllib
+import pathlib,pylab as pl,seaborn as sb
+import numpy as np,pandas as pd,tensorflow as tf
+from tensorflow.keras.layers.experimental import preprocessing as tkp
+import tensorflow.keras.layers as tkl,tensorflow.keras.models as tkm
+from IPython.display import display,Audio
+if not sys.warnoptions: warnings.simplefilter('ignore')
+rs=int(42); tf.random.set_seed(rs); np.random.seed(rs)
+AUTOTUNE=tf.data.AUTOTUNE
+</script></div><br/>
+    <h2>File Processing</h2>
+<div class='linked'><script type='text/x-sage'>
+file_path='http://storage.googleapis.com/download.tensorflow.org/data/'
+file_name='mini_speech_commands.zip'
+file_dir='mini_speech_commands/'
+input_file=urllib.request.urlopen(file_path+file_name)
+output_file=open(file_name,'wb')
+output_file.write(input_file.read())
+output_file.close(); input_file.close()
+with zipfile.ZipFile(file_name,'r') as z:
+    list_names=[x for x in z.namelist() 
+                if (file_dir in x) and ('__MACOSX' not in x) and ('README.md' not in x)]
+    z.close()
+dir_names=[x for x in list_names if ('.wav' not in x) and (len(x)>21)]
+files=[x for x in list_names if ('.wav' in x)]
+names=[x[21:-1] for x in dir_names]
+files=tf.random.shuffle(files)
+num_samples=len(files)
+print('labels: ',names)
+print('number of total examples: ',num_samples)
+print('examples of the file tensor: ',files[:int(10)])
+train_files=files[:int(.8*num_samples)]
+valid_files=files[int(.8*num_samples):int(.9*num_samples)]
+test_files=files[-int(.9*num_samples):]
+</script></div><br/>
+<div class='linked'><script type='text/x-sage'>
+def get_audio_and_label(file_path):
+    file_path_split=tf.strings.split(file_path,os.path.sep)
+    file_path=file_path.numpy().decode()
+    file=file_path_split[-int(1)].numpy().decode()
+    label=file_path_split[-int(2)]
+    with zipfile.ZipFile(file_name) as z:
+        with open(file,'wb') as f:
+            f.write(z.read(file_path)); f.close()
+        z.close()
+    audio_raw=tf.io.read_file(file)
+    audio,_=tf.audio.decode_wav(audio_raw)
+    audio=tf.squeeze(audio,axis=-int(1))
+    os.remove(file)
+    return audio,label
+</script></div><br/>
+<div class='linked'><script type='text/x-sage'>
+def get_spectrogram(audio,num=int(16000),frame_length=int(255),frame_step=int(128)):
+    zeros=tf.zeros([num]-tf.shape(audio),dtype=tf.float32)
+    audio=tf.cast(audio,tf.float32)
+    equal_length=tf.concat([audio,zeros],int(0))
+    # a Fourier transform with time information
+    spectrogram=tf.signal.stft(
+        equal_length,frame_length=frame_length,frame_step=frame_step)
+    # the magnitude
+    spectrogram=tf.abs(spectrogram)
+    return spectrogram
+def get_spectrogram_and_label_id(audio,label):
+    spectrogram=get_spectrogram(audio)
+    spectrogram=tf.expand_dims(spectrogram,-int(1))
+    label_id=tf.argmax(label==names)
+    return spectrogram,label_id
+</script></div><br/>
+    <h2>Data Representation</h2>
+<div class='linked'><script type='text/x-sage'>
+for i in range(3):
+    n=randint(1,1000)
+    audio,label=get_audio_and_label(files[int(i+n)])
+    spectrogram,label_id=get_spectrogram_and_label_id(audio,label)
+    display(table([('label','shape of audio tensors','spectrogram shape'),
+                   (label,audio.shape,spectrogram.shape)]))
+    display(Audio(audio,rate=int(16000)))
+</script></div><br/>
+<div class='linked'><script type='text/x-sage'>
+rows,cols=int(2),int(5)
+fig,axes=pl.subplots(rows,cols,figsize=(9,6))
+for i in range(rows*cols):
+    audio,label=get_audio_and_label(files[int(i)])
+    ax=axes[i//cols][i%cols]
+    ax.plot(audio.numpy(),color='slategray',alpha=.7)
+    ax.set_yticks(np.arange(-1.2,1.2,.2))
+    label=label.numpy().decode('utf-8')
+    ax.set_title('$\\mathbb{'+label+'}$',color='slategray',fontsize='large')
+pl.tight_layout(); pl.show()
+</script></div><br/>
+<div class='linked'><script type='text/x-sage'>
+def plot_spectrogram(spectrogram,ax):
+    log_spec=np.log(spectrogram.T)
+    height=log_spec.shape[0]
+    width=log_spec.shape[1]
+    x=np.linspace(0,np.size(spectrogram),num=width,dtype=int)
+    y=range(height)
+    ax.pcolormesh(x,y,log_spec,cmap='bone',shading='auto')
+fig,axes=pl.subplots(2,figsize=(9,6))
+timescale=np.arange(audio.shape[0])
+axes[0].plot(timescale,audio.numpy(),alpha=.7,color='slategray')
+axes[0].set_title('$\mathbb{'+'waveform'+'}$',
+                  color='slategray',fontsize='large')
+axes[0].set_xlim([0,16000])
+plot_spectrogram(np.squeeze(spectrogram.numpy()),axes[1])
+axes[1].set_title('$\mathbb{'+'spectrogram'+'}$',
+                  color='slategray',fontsize='large')
+pl.tight_layout(); pl.show()
+</script></div><br/>
+<div class='linked'><script type='text/x-sage'>
+rows,cols=int(2),int(5)
+fig,axes=pl.subplots(rows,cols,figsize=(9,6))
+for i in range(rows*cols):
+    audio,label=get_audio_and_label(files[int(i)])
+    spectrogram,label_id=get_spectrogram_and_label_id(audio,label)
+    ax=axes[i//cols][i%cols]
+    plot_spectrogram(np.squeeze(spectrogram.numpy()+.1**10),ax)
+    ax.set_title('$\mathbb{'+names[label_id.numpy()]+'}$',
+                 color='slategray',fontsize='large')
+    ax.axis('off')
+pl.tight_layout(); pl.show()
+</script></div><br/>
+    <h2>In Progress</h2>
+<div class='linked'><script type='text/x-sage'>
+
+</script></div><br/>
+<div class='linked'><script type='text/x-sage'>
+
+</script></div><br/>
+<div class='linked'><script type='text/x-sage'>
+
+</script></div><br/>
+  </body>
+</html>
